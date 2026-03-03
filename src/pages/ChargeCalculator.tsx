@@ -18,8 +18,7 @@ export default function ChargeCalculator() {
     const [selectedAlloyId, setSelectedAlloyId] = useState<number>(0);
     const [meltTimeHours, setMeltTimeHours] = useState<number>(2.0);
     const [totalChargeMassKg, setTotalChargeMassKg] = useState<number>(1000);
-
-    const [burnout, setBurnout] = useState<Burnout>({ C: 0, Si: 15, Mn: 30, Cr: 5, Ni: 0, S: 0, P: 0, Cu: 0 });
+    const [burnout, setBurnout] = useState<Burnout>({ C: 0, Si: 15, Mn: 30, Cr: 5, Ni: 0, S: 0, P: 0, Cu: 0, Ti: 0, Al: 0, Mg: 0, Sr: 0, Fe: 0 });
     const [enabledMaterials, setEnabledMaterials] = useState<Record<number, boolean>>({});
     const [masses, setMasses] = useState<Record<number, number>>({});
 

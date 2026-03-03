@@ -1,12 +1,20 @@
-import { Router } from 'express';
+import { Router, Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
-import { authMiddleware, requireRole } from '../middlewares/authMiddleware';
+import { authenticateToken } from '../middlewares/authMiddleware';
 
 const router = Router();
 const prisma = new PrismaClient();
 
+// Helper to check if user has required role
+function hasRole(req: any, roles: string[]): boolean {
+    return roles.includes(req.user?.role);
+}
+
 // Get all training materials (Admin / Director)
-router.get('/', authMiddleware, requireRole(['ADMIN', 'DIRECTOR']), async (req, res) => {
+router.get('/', authenticateToken, async (req: any, res) => {
+    if (!hasRole(req, ['ADMIN', 'DIRECTOR'])) {
+        return res.status(403).json({ error: 'Доступ запрещён' });
+    }
     try {
         const materials = await prisma.trainingMaterial.findMany({
             include: {
@@ -19,14 +27,17 @@ router.get('/', authMiddleware, requireRole(['ADMIN', 'DIRECTOR']), async (req, 
             orderBy: { createdAt: 'desc' }
         });
         res.json(materials);
-    } catch (error) {
-        console.error('Error fetching materials:', error);
+    } catch (error: any) {
+        console.error('Error fetching materials:', error?.message);
         res.status(500).json({ error: 'Failed to fetch materials' });
     }
 });
 
-// Create new training material and assign to departments / users (Admin / Director)
-router.post('/', authMiddleware, requireRole(['ADMIN', 'DIRECTOR']), async (req, res) => {
+// Create new training material and assign to departments / specific users
+router.post('/', authenticateToken, async (req: any, res) => {
+    if (!hasRole(req, ['ADMIN', 'DIRECTOR'])) {
+        return res.status(403).json({ error: 'Доступ запрещён' });
+    }
     try {
         const { title, description, fileUrl, departments, userIds } = req.body;
 
@@ -38,68 +49,71 @@ router.post('/', authMiddleware, requireRole(['ADMIN', 'DIRECTOR']), async (req,
         const material = await prisma.trainingMaterial.create({
             data: {
                 title,
-                description,
+                description: description || null,
                 fileUrl,
-                departments: departments ? JSON.stringify(departments) : null,
+                departments: departments && departments.length > 0 ? JSON.stringify(departments) : null,
             }
         });
 
         // 2. Determine who to assign
-        let usersToAssign = new Set<number>();
+        const usersToAssign = new Set<number>();
 
+        // Add individually selected users
         if (userIds && Array.isArray(userIds)) {
-            userIds.forEach(id => usersToAssign.add(id));
+            userIds.forEach((id: number) => usersToAssign.add(Number(id)));
         }
 
+        // Add all users from selected departments
         if (departments && Array.isArray(departments) && departments.length > 0) {
-            const users = await prisma.user.findMany({
+            const deptUsers = await prisma.user.findMany({
                 where: {
                     department: { in: departments },
                     isActive: true
                 },
                 select: { id: true }
             });
-            users.forEach(u => usersToAssign.add(u.id));
+            deptUsers.forEach(u => usersToAssign.add(u.id));
         }
 
-        // Also if we want to assign to everyone, but normally we just rely on usersToAssign
-
-        // 3. Create assignments
-        const assignmentsData = Array.from(usersToAssign).map(userId => ({
-            userId,
-            materialId: material.id,
-            status: 'PENDING'
-        }));
-
-        if (assignmentsData.length > 0) {
+        // 3. Create assignments (skip duplicates)
+        if (usersToAssign.size > 0) {
+            const assignmentsData = Array.from(usersToAssign).map(userId => ({
+                userId,
+                materialId: material.id,
+                status: 'PENDING'
+            }));
             await prisma.trainingAssignment.createMany({
-                data: assignmentsData
+                data: assignmentsData,
+                skipDuplicates: true
             });
         }
 
         res.status(201).json(material);
-    } catch (error) {
-        console.error('Error creating material:', error);
-        res.status(500).json({ error: 'Failed to create training material' });
+    } catch (error: any) {
+        console.error('Error creating material:', error?.message, error);
+        res.status(500).json({ error: 'Failed to create training material', detail: error?.message });
     }
 });
 
 // Delete a training material
-router.delete('/:id', authMiddleware, requireRole(['ADMIN', 'DIRECTOR']), async (req, res) => {
+router.delete('/:id', authenticateToken, async (req: any, res) => {
+    if (!hasRole(req, ['ADMIN', 'DIRECTOR'])) {
+        return res.status(403).json({ error: 'Доступ запрещён' });
+    }
     try {
         const id = parseInt(req.params.id);
-        await prisma.trainingMaterial.delete({
-            where: { id }
-        });
+        // Delete assignments first
+        await prisma.trainingAssignment.deleteMany({ where: { materialId: id } });
+        await prisma.trainingMaterial.delete({ where: { id } });
         res.json({ success: true });
-    } catch (error) {
-        console.error('Error deleting material:', error);
+    } catch (error: any) {
+        console.error('Error deleting material:', error?.message);
         res.status(500).json({ error: 'Failed to delete material' });
     }
 });
 
 // Get assigned materials for the current user
-router.get('/my', authMiddleware, async (req: any, res) => {
+router.get('/my', authenticateToken, async (req: any, res) => {
     try {
         const assignments = await prisma.trainingAssignment.findMany({
             where: { userId: req.user.id },
@@ -109,18 +123,17 @@ router.get('/my', authMiddleware, async (req: any, res) => {
             orderBy: { createdAt: 'desc' }
         });
         res.json(assignments);
-    } catch (error) {
-        console.error('Error fetching user assignments:', error);
+    } catch (error: any) {
+        console.error('Error fetching user assignments:', error?.message);
         res.status(500).json({ error: 'Failed to fetch assignments' });
     }
 });
 
 // Mark a material as read
-router.post('/my/:id/read', authMiddleware, async (req: any, res) => {
+router.post('/my/:id/read', authenticateToken, async (req: any, res) => {
     try {
         const assignmentId = parseInt(req.params.id);
 
-        // Check if the assignment belongs to the user
         const assignment = await prisma.trainingAssignment.findFirst({
             where: { id: assignmentId, userId: req.user.id }
         });
@@ -138,16 +151,18 @@ router.post('/my/:id/read', authMiddleware, async (req: any, res) => {
         });
 
         res.json(updated);
-    } catch (error) {
-        console.error('Error marking as read:', error);
+    } catch (error: any) {
+        console.error('Error marking as read:', error?.message);
         res.status(500).json({ error: 'Failed to mark as read' });
     }
 });
 
 // Get competency matrix (Director / Admin)
-router.get('/matrix', authMiddleware, requireRole(['ADMIN', 'DIRECTOR']), async (req, res) => {
+router.get('/matrix', authenticateToken, async (req: any, res) => {
+    if (!hasRole(req, ['ADMIN', 'DIRECTOR'])) {
+        return res.status(403).json({ error: 'Доступ запрещён' });
+    }
     try {
-        // Fetch all active users
         const users = await prisma.user.findMany({
             where: { isActive: true },
             select: {
@@ -169,20 +184,33 @@ router.get('/matrix', authMiddleware, requireRole(['ADMIN', 'DIRECTOR']), async 
             ]
         });
 
-        // Fetch all materials
         const materials = await prisma.trainingMaterial.findMany({
-            select: {
-                id: true,
-                title: true,
-                departments: true
-            },
+            select: { id: true, title: true, departments: true },
             orderBy: { createdAt: 'desc' }
         });
 
         res.json({ users, materials });
-    } catch (error) {
-        console.error('Error fetching matrix:', error);
+    } catch (error: any) {
+        console.error('Error fetching matrix:', error?.message);
         res.status(500).json({ error: 'Failed to fetch competency matrix' });
+    }
+});
+
+// Get all users list (for Admin assignment form)
+router.get('/users-list', authenticateToken, async (req: any, res) => {
+    if (!hasRole(req, ['ADMIN', 'DIRECTOR'])) {
+        return res.status(403).json({ error: 'Доступ запрещён' });
+    }
+    try {
+        const users = await prisma.user.findMany({
+            where: { isActive: true },
+            select: { id: true, fullName: true, department: true, role: true },
+            orderBy: [{ department: 'asc' }, { fullName: 'asc' }]
+        });
+        res.json(users);
+    } catch (error: any) {
+        console.error('Error fetching users list:', error?.message);
+        res.status(500).json({ error: 'Failed to fetch users' });
     }
 });
 

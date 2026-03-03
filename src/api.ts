@@ -296,5 +296,9 @@ export const api = {
     getCompetencyMatrix: async () => {
         const res = await apiClient.get('/training/matrix');
         return res.data;
+    },
+    getTrainingUsers: async () => {
+        const res = await apiClient.get('/training/users-list');
+        return res.data;
     }
 };

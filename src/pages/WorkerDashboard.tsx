@@ -117,7 +117,7 @@ export default function WorkerDashboard() {
     return (
         <div className="space-y-6">
             <h2 className="text-2xl font-bold flex items-center gap-2">
-                <Hammer className="text-orange-500" /> АРМ Рабочего: {user.department ? `Цех ${user.department}` : 'Мои Задачи'}
+                <Hammer className="text-orange-500" /> Мои Задачи: {user.department ? `Цех ${user.department}` : ''}
             </h2>
 
             {/* Instruction Panel */}

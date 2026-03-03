@@ -78,7 +78,7 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
                                         </NavLink>
                                     )}
                                     {(isWorker || isMaster || isAdmin) && (
-                                        <NavLink to="/worker" className={navLinkClasses} title={user?.department ? `Задачи (${user.department})` : 'Мои Задачи'}>
+                                        <NavLink to="/worker" className={navLinkClasses} title={user?.department ? `Мои Задачи (${user.department})` : 'Мои Задачи'}>
                                             <Activity size={20} className="shrink-0" />
                                             <span className={`transition-opacity duration-200 ${isOpen ? 'opacity-100' : 'lg:hidden'}`}>Мои Задачи</span>
                                         </NavLink>

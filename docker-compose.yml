@@ -35,7 +35,7 @@ services:
       db:
         condition: service_healthy
     # Выполняем миграции базы данных перед стартом сервера
-    command: /bin/sh -c "npx prisma migrate deploy && node dist/index.js"
+    command: /bin/sh -c "export DATABASE_URL=postgresql://liteks_user:super_secret_password_123@db:5432/liteks_db && npx prisma migrate deploy && node dist/index.js"
 
   # Наш Frontend (React приложение раздается через Nginx, он же проксирует /api/ на backend)
   frontend:

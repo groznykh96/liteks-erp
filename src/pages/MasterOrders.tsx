@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { api } from '../api';
 import {
-    Package, CheckCircle, Clock, AlertTriangle, Send, Play
+    Package, CheckCircle, Clock, AlertTriangle, Send, Play, MinusCircle, RotateCcw
 } from 'lucide-react';
 
 interface OrderItem {
@@ -107,6 +107,14 @@ export default function MasterOrders() {
                     await api.updateOrder(orderId, { status: 'IN_PROGRESS' });
                 }
             }
+            load();
+        } catch (e) { console.error(e); alert('Ошибка обновления этапа'); }
+    };
+
+    const handleStageSkip = async (orderId: number, stage: OrderStage) => {
+        const newStatus = stage.status === 'SKIPPED' ? 'PENDING' : 'SKIPPED';
+        try {
+            await api.updateOrderStage(orderId, stage.id, { status: newStatus });
             load();
         } catch (e) { console.error(e); alert('Ошибка обновления этапа'); }
     };
@@ -266,6 +274,21 @@ export default function MasterOrders() {
                                                     <div className="flex items-center gap-2">
                                                         {stage.status === 'DONE' && <CheckCircle size={16} className="text-green-400" />}
                                                         {stage.status === 'IN_PROGRESS' && <Clock size={16} className="text-yellow-400 animate-pulse" />}
+                                                        {stage.status !== 'DONE' && (
+                                                            <button
+                                                                onClick={() => handleStageSkip(selected.id, stage)}
+                                                                title={stage.status === 'SKIPPED' ? 'Вернуть этап в очередь' : 'Пропустить этап'}
+                                                                className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-bold transition-colors ${stage.status === 'SKIPPED'
+                                                                        ? 'bg-neutral-700 hover:bg-neutral-600 text-neutral-300'
+                                                                        : 'bg-neutral-700/50 hover:bg-red-900/40 text-neutral-400 hover:text-red-400'
+                                                                    }`}
+                                                            >
+                                                                {stage.status === 'SKIPPED'
+                                                                    ? <><RotateCcw size={10} /> Вернуть</>
+                                                                    : <><MinusCircle size={10} /> Пропустить</>
+                                                                }
+                                                            </button>
+                                                        )}
                                                         {stage.status !== 'DONE' && stage.status !== 'SKIPPED' && (
                                                             <button
                                                                 onClick={() => handleStageUpdate(selected.id, stage)}

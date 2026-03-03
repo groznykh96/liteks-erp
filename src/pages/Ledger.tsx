@@ -79,7 +79,16 @@ function RegistryView({ melts, alloys, nom, onView, onReload }: { melts: any[], 
         const ws = XLSX.utils.json_to_sheet(data);
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, "Реестр плавок");
-        XLSX.writeFile(wb, "Реестр_плавок.xlsx");
+        const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+        const blob = new Blob([wbout], { type: 'application/octet-stream' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = "Реестр_плавок.xlsx";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
     };
 
     return (
@@ -393,7 +402,16 @@ function MeltDetailsView({ melt, alloys, nom, onBack }: { melt: any, alloys: any
         const ws = XLSX.utils.json_to_sheet(data);
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, "Детализация");
-        XLSX.writeFile(wb, `Плавка_${melt.meltNumber}.xlsx`);
+        const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+        const blob = new Blob([wbout], { type: 'application/octet-stream' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `Плавка_${melt.meltNumber}.xlsx`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
     };
 
     return (

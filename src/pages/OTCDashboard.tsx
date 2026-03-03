@@ -92,10 +92,9 @@ export default function OTCDashboard() {
             XLSX.utils.book_append_sheet(wb, ws, "Реестр брака");
 
             const fileName = `Реестр_ОТК_${new Date().toLocaleDateString('ru-RU').replace(/\./g, '-')}.xlsx`;
-            const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
-
             const electronApi = (window as any).api;
             if (electronApi && electronApi.saveExcelFile) {
+                const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
                 const result = await electronApi.saveExcelFile(Array.from(wbout), fileName);
                 if (result?.success) {
                     alert(`Файл успешно сохранён:\n${result.filePath}`);
@@ -105,15 +104,7 @@ export default function OTCDashboard() {
                     alert('Файл сохранен (без детальной информации о пути)');
                 }
             } else {
-                const blob = new Blob([wbout], { type: 'application/octet-stream' });
-                const url = URL.createObjectURL(blob);
-                const link = document.createElement('a');
-                link.href = url;
-                link.download = fileName;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-                URL.revokeObjectURL(url);
+                XLSX.writeFile(wb, fileName);
             }
         } catch (e) {
             console.error('Ошибка выгрузки Excel:', e);

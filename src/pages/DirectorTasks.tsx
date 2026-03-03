@@ -58,7 +58,7 @@ export default function DirectorTasks() {
 
     useEffect(() => { load(); }, []);
 
-    if (user?.role !== 'DIRECTOR' && user?.role !== 'ADMIN') {
+    if (user?.role !== 'DIRECTOR' && user?.role !== 'ADMIN' && user?.role !== 'MASTER') {
         return <div className="p-8 text-center text-red-500 font-bold">Нет доступа</div>;
     }
 
@@ -95,7 +95,8 @@ export default function DirectorTasks() {
         <div className="space-y-4">
             <div className="flex items-center justify-between">
                 <h2 className="text-2xl font-bold flex items-center gap-2">
-                    <ClipboardCheck className="text-blue-500" /> Задачи от Руководителя
+                    <ClipboardCheck className="text-blue-500" />
+                    {user?.role === 'MASTER' ? 'Поручения сотрудникам' : 'Задачи от Руководителя'}
                 </h2>
                 <button onClick={() => setShowCreate(true)} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white font-bold px-4 py-2 rounded-lg transition-colors">
                     <Plus size={18} /> Создать задачу
@@ -162,10 +163,10 @@ export default function DirectorTasks() {
                                 <div className="text-xs text-neutral-500 font-semibold uppercase tracking-wider">Переписка</div>
                                 {selected.comments.length === 0 && <div className="text-neutral-600 text-sm">Ответов пока нет</div>}
                                 {selected.comments.map(c => {
-                                    const isDirector = c.author.role === 'DIRECTOR' || c.author.role === 'ADMIN';
+                                    const isAuthorOrHigher = c.author.role === 'DIRECTOR' || c.author.role === 'ADMIN' || c.author.role === 'MASTER';
                                     return (
-                                        <div key={c.id} className={`flex gap-2 ${isDirector ? 'justify-end' : 'justify-start'}`}>
-                                            <div className={`max-w-[80%] p-3 rounded-xl text-sm ${isDirector
+                                        <div key={c.id} className={`flex gap-2 ${isAuthorOrHigher ? 'justify-end' : 'justify-start'}`}>
+                                            <div className={`max-w-[80%] p-3 rounded-xl text-sm ${isAuthorOrHigher
                                                 ? 'bg-blue-700/30 text-blue-100 border border-blue-700/40'
                                                 : 'bg-neutral-700 text-neutral-200 border border-neutral-600'}`}>
                                                 <div className="font-bold text-xs mb-1">{c.author.fullName}</div>

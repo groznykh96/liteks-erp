@@ -270,5 +270,31 @@ export const api = {
             const res = await apiClient.get('/orders/stats/summary');
             return res.data;
         } catch (e) { return null; }
+    },
+
+    // --- TRAINING ---
+    getTrainingMaterials: async () => {
+        const res = await apiClient.get('/training');
+        return res.data;
+    },
+    createTrainingMaterial: async (data: any) => {
+        const res = await apiClient.post('/training', data);
+        return res.data;
+    },
+    deleteTrainingMaterial: async (id: number) => {
+        const res = await apiClient.delete(`/training/${id}`);
+        return res.data;
+    },
+    getMyTraining: async () => {
+        const res = await apiClient.get('/training/my');
+        return res.data;
+    },
+    markTrainingAsRead: async (assignmentId: number) => {
+        const res = await apiClient.post(`/training/my/${assignmentId}/read`);
+        return res.data;
+    },
+    getCompetencyMatrix: async () => {
+        const res = await apiClient.get('/training/matrix');
+        return res.data;
     }
 };

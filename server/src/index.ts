@@ -17,6 +17,7 @@ import statisticsRouter from './routes/statistics';
 import directorTasksRouter from './routes/directorTasks';
 import ordersRouter from './routes/orders';
 import instructionsRouter from './routes/instructions';
+import trainingRouter from './routes/training';
 
 import { Pool } from 'pg';
 import { PrismaPg } from '@prisma/adapter-pg';

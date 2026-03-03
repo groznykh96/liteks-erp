@@ -19,6 +19,9 @@ import DirectorTasks from './pages/DirectorTasks';
 import MyDirectorTasks from './pages/MyDirectorTasks';
 import SalesDashboard from './pages/SalesDashboard';
 import MasterOrders from './pages/MasterOrders';
+import MyTraining from './pages/Training/MyTraining';
+import TrainingAdmin from './pages/Training/TrainingAdmin';
+import CompetencyMatrix from './pages/Training/CompetencyMatrix';
 import './App.css';
 
 function HeaderTitle() {
@@ -163,6 +166,11 @@ function MainLayout() {
               <Route path="/my-director-tasks" element={<ProtectedRoute><MyDirectorTasks /></ProtectedRoute>} />
               <Route path="/sales" element={<ProtectedRoute><SalesDashboard /></ProtectedRoute>} />
               <Route path="/master-orders" element={<ProtectedRoute><MasterOrders /></ProtectedRoute>} />
+
+              {/* Training and Instructions Modules */}
+              <Route path="/training" element={<ProtectedRoute><MyTraining /></ProtectedRoute>} />
+              <Route path="/admin/training" element={<AdminRoute><TrainingAdmin /></AdminRoute>} />
+              <Route path="/director/matrix" element={<AdminRoute><CompetencyMatrix /></AdminRoute>} />
             </Routes>
           </main>
 

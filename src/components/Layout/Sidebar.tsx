@@ -2,7 +2,7 @@
 import { NavLink } from 'react-router-dom';
 import {
     ClipboardList, Package, Beaker, FileText,
-    Users, Settings, Activity, ShieldCheck, PieChart, Menu, ChevronLeft, Briefcase, ClipboardCheck, ShoppingCart
+    Users, Settings, Activity, ShieldCheck, PieChart, Menu, ChevronLeft, Briefcase, ClipboardCheck, ShoppingCart, BookOpen, LayoutGrid
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -89,11 +89,18 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
                                             <span className={`transition-opacity duration-200 ${isOpen ? 'opacity-100' : 'lg:hidden'}`}>ОТК и Инспекция</span>
                                         </NavLink>
                                     )}
-                                    {/* Director tasks — for non-sales production staff */}
-                                    <NavLink to="/my-director-tasks" className={navLinkClasses} title="Поручения рук-ля">
+                                    {/* Director tasks — for non-sales production staff viewing their own assigned tasks */}
+                                    <NavLink to="/my-director-tasks" className={navLinkClasses} title="Мои поручения">
                                         <ClipboardCheck size={20} className="shrink-0" />
-                                        <span className={`transition-opacity duration-200 ${isOpen ? 'opacity-100' : 'lg:hidden'}`}>Поручения рук-ля</span>
+                                        <span className={`transition-opacity duration-200 ${isOpen ? 'opacity-100' : 'lg:hidden'}`}>Мои поручения</span>
                                     </NavLink>
+                                    {/* Issue tasks - specifically for Master to issue tasks to workers in his production group */}
+                                    {isMaster && (
+                                        <NavLink to="/director-tasks" className={navLinkClasses} title="Выдать поручение">
+                                            <Briefcase size={20} className="shrink-0" />
+                                            <span className={`transition-opacity duration-200 ${isOpen ? 'opacity-100' : 'lg:hidden'}`}>Задачи сотрудникам</span>
+                                        </NavLink>
+                                    )}
                                     {(isMaster || isAdmin) && (
                                         <NavLink to="/master-orders" className={navLinkClasses} title="Заказы в работе">
                                             <Package size={20} className="shrink-0" />
@@ -146,14 +153,30 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
                             </div>
                         )}
 
-                        {/* Group: База Знаний */}
+                        {/* Group: База Знаний и Обучение */}
                         <div>
-                            {isOpen && <h4 className="px-3 mb-2 text-xs font-semibold text-neutral-500 uppercase tracking-wider">Знания</h4>}
+                            {isOpen && <h4 className="px-3 mb-2 text-xs font-semibold text-neutral-500 uppercase tracking-wider">Знания и Обучение</h4>}
                             <div className="space-y-1">
                                 <NavLink to="/instructions" className={navLinkClasses} title="Инструкции">
                                     <FileText size={20} className="shrink-0" />
                                     <span className={`transition-opacity duration-200 ${isOpen ? 'opacity-100' : 'lg:hidden'}`}>Инструкции</span>
                                 </NavLink>
+                                <NavLink to="/training" className={navLinkClasses} title="Мое обучение">
+                                    <BookOpen size={20} className="shrink-0" />
+                                    <span className={`transition-opacity duration-200 ${isOpen ? 'opacity-100' : 'lg:hidden'}`}>Мое обучение</span>
+                                </NavLink>
+                                {(isAdmin || isDirector) && (
+                                    <>
+                                        <NavLink to="/admin/training" className={navLinkClasses} title="Управление обучением">
+                                            <Settings size={20} className="shrink-0" />
+                                            <span className={`transition-opacity duration-200 ${isOpen ? 'opacity-100' : 'lg:hidden'}`}>Управл. обучением</span>
+                                        </NavLink>
+                                        <NavLink to="/director/matrix" className={navLinkClasses} title="Матрица компетенций">
+                                            <LayoutGrid size={20} className="shrink-0" />
+                                            <span className={`transition-opacity duration-200 ${isOpen ? 'opacity-100' : 'lg:hidden'}`}>Матрица компетенций</span>
+                                        </NavLink>
+                                    </>
+                                )}
                             </div>
                         </div>
 

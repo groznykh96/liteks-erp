@@ -28,8 +28,8 @@ router.get('/', async (req: Request, res: Response) => {
     try {
         const where: any = {};
 
-        // Director/Admin sees all tasks they created
-        if (currentUser.role === 'DIRECTOR' || currentUser.role === 'ADMIN') {
+        // Director/Admin/Master sees all tasks they created
+        if (currentUser.role === 'DIRECTOR' || currentUser.role === 'ADMIN' || currentUser.role === 'MASTER') {
             where.createdById = currentUser.id;
         } else {
             // Other roles see only tasks assigned to them
@@ -48,10 +48,10 @@ router.get('/', async (req: Request, res: Response) => {
     }
 });
 
-// POST /api/director-tasks — create new task (Director / Admin only)
+// POST /api/director-tasks — create new task (Director / Admin / Master only)
 router.post('/', async (req: Request, res: Response) => {
     const currentUser = (req as any).user;
-    if (currentUser.role !== 'DIRECTOR' && currentUser.role !== 'ADMIN') {
+    if (currentUser.role !== 'DIRECTOR' && currentUser.role !== 'ADMIN' && currentUser.role !== 'MASTER') {
         return res.status(403).json({ error: 'Нет прав для создания задачи' });
     }
     try {
@@ -86,9 +86,9 @@ router.put('/:id', async (req: Request, res: Response) => {
         const existing = await prisma.directorTask.findUnique({ where: { id: taskId } });
         if (!existing) return res.status(404).json({ error: 'Задача не найдена' });
 
-        // Only the assignee or director/admin can update
+        // Only the assignee or director/admin/master can update
         if (existing.assignedToId !== currentUser.id &&
-            currentUser.role !== 'DIRECTOR' && currentUser.role !== 'ADMIN') {
+            currentUser.role !== 'DIRECTOR' && currentUser.role !== 'ADMIN' && currentUser.role !== 'MASTER') {
             return res.status(403).json({ error: 'Нет прав для изменения задачи' });
         }
 
@@ -130,10 +130,10 @@ router.post('/:id/comments', async (req: Request, res: Response) => {
     }
 });
 
-// DELETE /api/director-tasks/:id — director can delete a task
+// DELETE /api/director-tasks/:id — director/master can delete a task
 router.delete('/:id', async (req: Request, res: Response) => {
     const currentUser = (req as any).user;
-    if (currentUser.role !== 'DIRECTOR' && currentUser.role !== 'ADMIN') {
+    if (currentUser.role !== 'DIRECTOR' && currentUser.role !== 'ADMIN' && currentUser.role !== 'MASTER') {
         return res.status(403).json({ error: 'Нет прав для удаления задачи' });
     }
     try {

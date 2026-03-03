@@ -3,7 +3,8 @@ const { Client } = require('ssh2');
 const conn = new Client();
 conn.on('ready', () => {
     console.log('SSH connected');
-    conn.exec('cd /var/www/liteks && git pull origin main && docker-compose build frontend && docker-compose up -d --force-recreate frontend', (err, stream) => {
+    // Rebuild BOTH backend and frontend to pick up server-side code changes
+    conn.exec('cd /var/www/liteks && git pull origin main && docker-compose build backend frontend && docker-compose up -d --force-recreate backend frontend', (err, stream) => {
         if (err) throw err;
         stream.on('close', (code, signal) => {
             console.log('Done :: code: ' + code);

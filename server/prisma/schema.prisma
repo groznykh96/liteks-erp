@@ -1,0 +1,452 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// -----------------------------------------
+// 1. Roles and Users
+// -----------------------------------------
+model User {
+  id             Int       @id @default(autoincrement())
+  fullName       String
+  login          String    @unique
+  passwordHash   String
+  role           String    // 'ADMIN', 'DIRECTOR', 'MASTER', 'TECHNOLOGIST', 'OTC', 'WORKER'
+  department     String?
+  isActive       Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+
+  // Relationships
+  teamLeading    Team[]    @relation("TeamLead")
+  teams          Team[]    @relation("TeamMembers")
+  tasksAssigned  Task[]    @relation("TaskAssignee")
+  inspections    Inspection[]
+  meltConclusions MeltConclusion[]
+  
+  // New back-relations for QC and Batches
+  batches        Batch[]
+  qcInspections  QCReport[] @relation("QCInspector")
+  qcGuiltys      QCReport[] @relation("QCGuiltyWorker")
+  
+  // Director Task System
+  directorTasksCreated  DirectorTask[] @relation("TaskCreator")
+  directorTasksAssigned DirectorTask[] @relation("TaskAssignee2")
+  taskComments          DirectorTaskComment[]
+
+  // Sales Order System
+  ordersCreated         Order[]        @relation("OrderCreator")
+  ordersAsMaster        Order[]        @relation("OrderMaster")
+  orderStageUpdates     OrderStage[]
+  orderComments         OrderComment[]
+}
+
+model Team {
+  id             Int       @id @default(autoincrement())
+  name           String
+  leadId         Int?
+  leader         User?     @relation("TeamLead", fields: [leadId], references: [id])
+  members        User[]    @relation("TeamMembers")
+  tasksAssigned  Task[]    @relation("TaskTeamAssignee")
+}
+
+// -----------------------------------------
+// 2. Dictionaries / References
+// -----------------------------------------
+model Material {
+  id             Int       @id @default(autoincrement())
+  name           String
+  price          Float
+  assimilation   Float?    @default(100)
+  
+  // Elements
+  C              Float?
+  Si             Float?
+  Mn             Float?
+  Cr             Float?
+  Ni             Float?
+  S              Float?
+  P              Float?
+  Cu             Float?
+  Ti             Float?
+  Al             Float?
+  V              Float?
+  Mo             Float?
+  W              Float?
+  Mg             Float?
+  Fe             Float?
+  Sr             Float?
+
+  isGlobal       Boolean   @default(true)
+}
+
+model Alloy {
+  id             Int       @id @default(autoincrement())
+  name           String    @unique
+  
+  C_min          Float?
+  C_max          Float?
+  Si_min         Float?
+  Si_max         Float?
+  Mn_min         Float?
+  Mn_max         Float?
+  Cr_min         Float?
+  Cr_max         Float?
+  Ni_min         Float?
+  Ni_max         Float?
+  S_min          Float?
+  S_max          Float?
+  P_min          Float?
+  P_max          Float?
+  Cu_min         Float?
+  Cu_max         Float?
+  Ti_min         Float?
+  Ti_max         Float?
+  Al_min         Float?
+  Al_max         Float?
+  V_min          Float?
+  V_max          Float?
+  Mo_min         Float?
+  Mo_max         Float?
+  W_min          Float?
+  W_max          Float?
+  Mg_min         Float?
+  Mg_max         Float?
+  Fe_min         Float?
+  Fe_max         Float?
+  Sr_min         Float?
+  Sr_max         Float?
+
+  melts          Melt[]
+}
+
+model Nomenclature {
+  id             Int       @id @default(autoincrement())
+  code           String
+  name           String
+  group_name     String?
+  exitMass       Float
+  goodMass       Float
+  tvgNorm        Float     @default(100)
+  note           String?
+  
+  castingMethodId Int?
+  castingMethod  CastingMethod? @relation(fields: [castingMethodId], references: [id])
+
+  castings       Casting[]
+  tasks          Task[]
+  defects        Defect[]
+  productionPlans ProductionPlanItem[]
+}
+
+model CastingMethod {
+  id             Int       @id @default(autoincrement())
+  name           String    @unique // e.g. "ХТС", "Кокиль", "МЛПД"
+
+  tasks          Task[]
+  productionPlans ProductionPlanItem[]
+  nomenclatures  Nomenclature[]
+}
+
+model DefectReason {
+  id             Int       @id @default(autoincrement())
+  name           String
+  category       String?
+  isActive       Boolean   @default(true)
+
+  defects        Defect[]
+}
+
+// -----------------------------------------
+// 3. Melts (Журнал плавок)
+// -----------------------------------------
+model Melt {
+  id             Int       @id @default(autoincrement())
+  meltNumber     String    @unique
+  date           String
+  alloyId        Int
+  totalCost      Float
+  meltMass       Float
+  note           String?   // Used for storing json/note of materials added
+
+  alloy          Alloy     @relation(fields: [alloyId], references: [id])
+  castings       Casting[]
+  tasks          Task[]
+  conclusion     MeltConclusion?
+}
+
+model Casting {
+  id             Int       @id @default(autoincrement())
+  meltId         Int
+  nomId          Int
+  qty            Int
+  exitMassFact   String?
+  goodMassFact   String?
+  tvgFact        String?
+  note           String?
+
+  melt           Melt      @relation(fields: [meltId], references: [id], onDelete: Cascade)
+  nomenclature   Nomenclature @relation(fields: [nomId], references: [id])
+}
+
+model MeltConclusion {
+  id               Int       @id @default(autoincrement())
+  meltId           Int       @unique
+  employeeId       Int       // The OTC/Tech/Master who filed the conclusion
+  chemistryStatus  String?   // e.g. "В норме", "Отклонение"
+  mechanicalStatus String?
+  finalVerdict     String    // e.g. "Годна", "Изолятор", "Брак"
+  comments         String?
+  date             DateTime  @default(now())
+
+  melt             Melt      @relation(fields: [meltId], references: [id], onDelete: Cascade)
+  employee         User      @relation(fields: [employeeId], references: [id])
+}
+
+// -----------------------------------------
+// 4. Planning, Tasks & Batches
+// -----------------------------------------
+model ProductionPlanItem {
+  id               Int       @id @default(autoincrement())
+  planDate         String
+  partCodeId       Int
+  methodId         Int
+  plannedQuantity  Int
+  priority         Int       @default(1)
+  status           String    @default("NEW")
+  notes            String?
+
+  nomenclature     Nomenclature  @relation(fields: [partCodeId], references: [id])
+  method           CastingMethod @relation(fields: [methodId], references: [id])
+  tasks            Task[]
+}
+
+model Task {
+  id               Int       @id @default(autoincrement())
+  taskNumber       String    @unique
+  planItemId       Int?
+  meltId           Int?
+  partCodeId       Int
+  methodId         Int
+  quantity         Int
+  
+  assignedToUserId Int?
+  assignedToTeamId Int?
+  assignedByUserId Int?
+  
+  status           String    @default("ASSIGNED") // ASSIGNED, IN_PROGRESS, INSPECTION, DONE
+  notes            String?
+  createdAt        DateTime  @default(now())
+
+  planItem         ProductionPlanItem?  @relation(fields: [planItemId], references: [id])
+  melt             Melt?                @relation(fields: [meltId], references: [id])
+  nomenclature     Nomenclature         @relation(fields: [partCodeId], references: [id])
+  method           CastingMethod        @relation(fields: [methodId], references: [id])
+  assignedUser     User?                @relation("TaskAssignee", fields: [assignedToUserId], references: [id])
+  assignedTeam     Team?                @relation("TaskTeamAssignee", fields: [assignedToTeamId], references: [id])
+  
+  executions       TaskExecution[]
+  inspections      Inspection[]
+  batches          Batch[]
+}
+
+model TaskExecution {
+  id               Int       @id @default(autoincrement())
+  taskId           Int
+  employeeId       Int?
+  startTime        DateTime
+  endTime          DateTime?
+  reportedQuantity Int?
+  status           String    @default("IN_PROGRESS") // IN_PROGRESS, DONE
+
+  task             Task      @relation(fields: [taskId], references: [id], onDelete: Cascade)
+}
+
+model Batch {
+  id               Int       @id @default(autoincrement())
+  batchNumber      String    @unique
+  taskId           Int
+  workerId         Int
+  completedQuantity Int
+  
+  // New fields for worker performance tracking
+  meltsCount       Int?      @default(1) // Number of melts performed by the worker
+  pouringTemp      Float?    // Pouring temperature
+  moldTemp         Float?    // Mold or die temperature
+
+  createdAt        DateTime  @default(now())
+  
+  task             Task      @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  worker           User      @relation(fields: [workerId], references: [id])
+  qcReports        QCReport[]
+}
+
+// -----------------------------------------
+// 5. Quality Control (ОТК)
+// -----------------------------------------
+model Inspection {
+  id               Int       @id @default(autoincrement())
+  taskId           Int
+  inspectionDate   DateTime  @default(now())
+  inspectorId      Int
+  acceptedQuantity Int
+  rejectedQuantity Int
+  actNumber        String?
+  photoUrls        String?   // JSON array string
+  comments         String?
+  status           String    @default("COMPLETED")
+
+  task             Task      @relation(fields: [taskId], references: [id])
+  inspector        User      @relation(fields: [inspectorId], references: [id])
+  defects          Defect[]
+}
+
+model Defect {
+  id                   Int       @id @default(autoincrement())
+  inspectionId         Int
+  internalDefectNumber String    @unique
+  partCodeId           Int
+  quantity             Int
+  reasonId             Int?
+  photoUrls            String?   // JSON array string
+  description          String?
+  technologistComment  String?
+  analysisDate         DateTime?
+  status               String    @default("NEW") // NEW, IN_ANALYSIS, CLOSED
+
+  inspection           Inspection   @relation(fields: [inspectionId], references: [id], onDelete: Cascade)
+  nomenclature         Nomenclature @relation(fields: [partCodeId], references: [id])
+  reason               DefectReason? @relation(fields: [reasonId], references: [id])
+}
+
+model QCReport {
+  id               Int       @id @default(autoincrement())
+  batchId          Int
+  inspectorId      Int
+  acceptedQty      Int
+  rejectedQty      Int
+  comment          String?
+  guiltyWorkerId   Int?      // The worker responsible for the rejected quantity
+  createdAt        DateTime  @default(now())
+  
+  batch            Batch     @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  inspector        User      @relation("QCInspector", fields: [inspectorId], references: [id])
+  guiltyWorker     User?     @relation("QCGuiltyWorker", fields: [guiltyWorkerId], references: [id])
+  photos           QCPhoto[]
+}
+
+model QCPhoto {
+  id               Int       @id @default(autoincrement())
+  reportId         Int
+  photoUrl         String
+  
+  report           QCReport  @relation(fields: [reportId], references: [id], onDelete: Cascade)
+}
+
+// -----------------------------------------
+// 6. Director Task System
+// -----------------------------------------
+model DirectorTask {
+  id          Int       @id @default(autoincrement())
+  title       String
+  description String
+  priority    Int       @default(1)  // 1=Normal, 2=High, 3=Urgent
+  status      String    @default("NEW") // NEW, IN_PROGRESS, DONE, REJECTED
+  createdAt   DateTime  @default(now())
+  deadline    DateTime?
+
+  createdById  Int
+  assignedToId Int
+
+  createdBy    User   @relation("TaskCreator", fields: [createdById], references: [id])
+  assignedTo   User   @relation("TaskAssignee2", fields: [assignedToId], references: [id])
+  comments     DirectorTaskComment[]
+}
+
+model DirectorTaskComment {
+  id        Int      @id @default(autoincrement())
+  text      String
+  createdAt DateTime @default(now())
+  taskId    Int
+  authorId  Int
+
+  task      DirectorTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  author    User         @relation(fields: [authorId], references: [id])
+}
+
+// -----------------------------------------
+// 7. Sales Order System
+// -----------------------------------------
+model Order {
+  id           Int      @id @default(autoincrement())
+  orderNumber  String   @unique
+  clientName   String
+  clientPhone  String?
+  clientEmail  String?
+  notes        String?
+  deadline     DateTime
+  status       String   @default("NEW") // NEW | ACCEPTED | IN_PROGRESS | READY | SHIPPED | CLOSED
+  totalAmount  Float?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  createdById  Int
+  createdBy    User     @relation("OrderCreator", fields: [createdById], references: [id])
+  masterId     Int?
+  master       User?    @relation("OrderMaster", fields: [masterId], references: [id])
+
+  items        OrderItem[]
+  stages       OrderStage[]
+  comments     OrderComment[]
+}
+
+model OrderItem {
+  id           Int     @id @default(autoincrement())
+  orderId      Int
+  order        Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  nomId        Int?
+  itemName     String
+  quantity     Int
+  weight       Float?
+  alloyName    String?
+  pricePerUnit Float?
+}
+
+model OrderStage {
+  id          Int       @id @default(autoincrement())
+  orderId     Int
+  order       Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  stageKey    String    // PREP | MELT | KNOCKOUT | HEAT_TREAT | MACHINING | QC | SHIP
+  label       String
+  sortOrder   Int       @default(0)
+  plannedDate DateTime?
+  actualDate  DateTime?
+  status      String    @default("PENDING") // PENDING | IN_PROGRESS | DONE | SKIPPED
+  note        String?
+  updatedById Int?
+  updatedBy   User?     @relation(fields: [updatedById], references: [id])
+}
+
+model OrderComment {
+  id        Int      @id @default(autoincrement())
+  orderId   Int
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  authorId  Int
+  author    User     @relation(fields: [authorId], references: [id])
+  text      String
+  createdAt DateTime @default(now())
+}
+
+// Editable instructions per role
+model InstructionPage {
+  id        Int      @id @default(autoincrement())
+  roleKey   String   @unique  // 'WORKER', 'MASTER', 'OTK', 'DIRECTOR', 'TECH', 'ADMIN', 'SALES'
+  title     String
+  content   String   // markdown / HTML text
+  updatedAt DateTime @updatedAt
+}

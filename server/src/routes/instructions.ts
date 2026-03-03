@@ -1,0 +1,165 @@
+import { Router, Request, Response } from 'express';
+import { PrismaClient } from '@prisma/client';
+import { Pool } from 'pg';
+import { PrismaPg } from '@prisma/adapter-pg';
+import { authenticateToken } from '../middlewares/authMiddleware';
+
+const pool = new Pool({ connectionString: String(process.env.DATABASE_URL) });
+const adapter = new PrismaPg(pool);
+const prisma = new PrismaClient({ adapter });
+
+const router = Router();
+
+// Default content for each role (used when DB has no record yet)
+const DEFAULTS: Record<string, { title: string; content: string }> = {
+    WORKER: {
+        title: 'Инструкция Литейщика / Рабочего',
+        content: `## 1. Просмотр сменного задания
+Перейдите в раздел **«Мои Задачи»**. Там отображаются выделенные вам задачи мастером. Обращайте внимание на приоритет (Срочно / Высокий / Обычный).
+
+## 2. Взятие задачи в работу
+Когда вы готовы приступить, нажмите кнопку **«Начать работу»** под карточкой задачи.
+
+## 3. Сдача готовой партии
+После завершения литья нажмите зеленую кнопку **«Сдать в ОТК (Завершить)»**.
+В появившемся окне введите:
+- **Фактическое кол-во** — сколько деталей получилось
+- **Уникальный номер партии** — номер, по которому ОТК будет принимать детали
+
+## 4. Контроль качества
+В нижней части страницы в таблице **«Статистика и приемка ОТК»** отслеживайте статус приёмки.`
+    },
+    MASTER: {
+        title: 'Инструкция Мастера производственного участка',
+        content: `## 1. Создание плана и выдача задач
+Перейдите в раздел **«План»**. В левой части - форма выдачи сменного задания:
+- Выберите номенклатуру и метод литья
+- Укажите плановое количество и приоритет
+- Назначьте рабочего
+- Нажмите **«Сохранить задачу»**
+
+## 2. Контроль выполнения
+Отслеживайте статусы задач: **Новая → В работе → Готово**
+
+## 3. Заказы в производстве
+В разделе **«Заказы в работе»** принимайте заказы от отдела продаж и отмечайте этапы выполнения.`
+    },
+    OTK: {
+        title: 'Инструкция Контролера ОТК',
+        content: `## 1. Очередь на приёмку
+В разделе **«ОТК»** на вкладке **«Ожидают проверки»** — все партии, сданные рабочими.
+
+## 2. Проведение инспекции
+- Нажмите **«Провести инспекцию»** рядом с партией
+- Введите количество годных деталей
+- Введите количество бракованных
+- При наличии брака укажите причину
+- Нажмите **«Сохранить отчет»**
+
+## 3. История проверок
+На вкладке **«История проверок»** хранятся все прошедшие через вас партии.`
+    },
+    DIRECTOR: {
+        title: 'Инструкция Руководителя',
+        content: `## 1. Анализ показателей
+В разделе **«Воронка ДП»** представлены графики брака, производительности и себестоимости.
+
+## 2. Прямое управление
+Кнопка **«Выдать задачу»** позволяет формировать прямые указания сотрудникам.
+
+## 3. Заказы от клиентов
+В разделе **«Заказы от клиентов»** контролируйте все производственные заказы.`
+    },
+    TECH: {
+        title: 'Инструкция Технолога',
+        content: `## 1. Расчёт шихты
+- Перейдите на вкладку **«Расчёт шихты»**
+- Выберите марку сплава и вес завалки
+- Отметьте материалы в наличии
+- Нажмите **«🔄 Автоподбор»** для подбора оптимального состава
+- Нажмите **«💾 Сохранить расчет»** для внесения в журнал
+
+## 2. Дошихтовка
+Если химия не попала в ГОСТ, используйте раздел **«Дошихтовка»** для расчёта корректирующих добавок.`
+    },
+    SALES: {
+        title: 'Инструкция Менеджера по продажам',
+        content: `## 1. Создание заказа
+В разделе **«Заказы от клиентов»** нажмите **«+ Новый заказ»** и заполните:
+- Название клиента и контактные данные
+- Срок поставки
+- Позиции заказа (детали, кол-во, марка сплава)
+
+## 2. Отслеживание статуса
+- 🔵 **Новый** — ждёт принятия мастером
+- 🟡 **В производстве** — идёт изготовление
+- 🟢 **Готов** — нажмите «Отгрузить» для завершения
+
+## 3. Переписка с мастером
+В панели заказа (справа) есть чат для общения с мастером.`
+    },
+    ADMIN: {
+        title: 'Инструкция Администратора',
+        content: `## Управление персоналом
+В разделе **«Администрирование»** создавайте аккаунты сотрудников.
+
+При создании аккаунта Рабочего или Мастера **обязательно** выберите цех (ХТС, МЛПД, Кокиль).
+
+## Редактирование инструкций
+В разделе **«Администрирование»** на вкладке **«Инструкции»** вы можете редактировать текст инструкций для каждой роли.`
+    }
+};
+
+// GET /api/instructions — public, returns all or by role
+router.get('/', async (req: Request, res: Response) => {
+    try {
+        const pages = await prisma.instructionPage.findMany();
+        // Merge with defaults for roles not yet in DB
+        const result = Object.entries(DEFAULTS).map(([roleKey, def]) => {
+            const found = pages.find(p => p.roleKey === roleKey);
+            return found || { id: null, roleKey, ...def };
+        });
+        res.json(result);
+    } catch (e) {
+        res.status(500).json({ error: 'DB Error' });
+    }
+});
+
+// GET /api/instructions/:role — get single role instruction
+router.get('/:role', async (req: Request, res: Response) => {
+    const role = req.params.role as string;
+    try {
+        let page = await prisma.instructionPage.findUnique({ where: { roleKey: role } });
+        if (!page) {
+            const def = DEFAULTS[role];
+            if (!def) return res.status(404).json({ error: 'Not found' });
+            return res.json({ id: null, roleKey: role, ...def });
+        }
+        res.json(page);
+    } catch (e) {
+        res.status(500).json({ error: 'DB Error' });
+    }
+});
+
+// PUT /api/instructions/:role — update (ADMIN only)
+router.put('/:role', authenticateToken, async (req: Request, res: Response) => {
+    const currentUser = (req as any).user;
+    if (currentUser.role !== 'ADMIN') {
+        return res.status(403).json({ error: 'Нет прав' });
+    }
+    const role = req.params.role as string;
+    const { title, content } = req.body;
+    if (!title || !content) return res.status(400).json({ error: 'Заголовок и содержание обязательны' });
+    try {
+        const page = await prisma.instructionPage.upsert({
+            where: { roleKey: role },
+            create: { roleKey: role, title, content },
+            update: { title, content }
+        });
+        res.json(page);
+    } catch (e) {
+        res.status(500).json({ error: 'DB Error' });
+    }
+});
+
+export default router;

@@ -1,0 +1,54 @@
+version: '3.8'
+
+services:
+  # База данных PostgreSQL
+  db:
+    image: postgres:15-alpine
+    restart: always
+    environment:
+      POSTGRES_USER: liteks_user
+      POSTGRES_PASSWORD: super_secret_password_123
+      POSTGRES_DB: liteks_db
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U liteks_user -d liteks_db" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Наш Node.js бэкенд (API)
+  backend:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    restart: always
+    ports:
+      - "4000:4000"
+    environment:
+      - PORT=4000
+      - DATABASE_URL=postgresql://liteks_user:super_secret_password_123@db:5432/liteks_db
+      - JWT_SECRET=change_this_to_something_secure_for_production
+      # Разрешаем все домены для CORS (В проде лучше сузить до своего домена)
+      - CORS_ORIGIN=*
+    depends_on:
+      db:
+        condition: service_healthy
+    # Выполняем миграции базы данных перед стартом сервера
+    command: /bin/sh -c "npx prisma migrate deploy && node dist/index.js"
+
+  # Наш Frontend (React приложение раздается через Nginx, он же проксирует /api/ на backend)
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: always
+    ports:
+      - "80:80"
+      # Если нужен HTTPS, раскомментируйте порт 443 и добавьте сертификаты
+      # - "443:443"
+    depends_on:
+      - backend
+
+volumes:
+  pgdata:

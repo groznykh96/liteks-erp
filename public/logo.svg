@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80" fill="none">
+  <!-- Outer geometric pentagon/house shape -->
+  <path d="M40 4 L72 24 L72 60 L40 76 L8 60 L8 24 Z" fill="#6b6b6b" stroke="#888" stroke-width="1.5"/>
+  <!-- Inner lighter shape -->
+  <path d="M40 10 L66 26 L66 56 L40 70 L14 56 L14 26 Z" fill="#7a7a7a" stroke="#999" stroke-width="0.5"/>
+  <!-- Red drop -->
+  <path d="M40 22 C40 22 28 38 28 46 C28 52.6 33.4 58 40 58 C46.6 58 52 52.6 52 46 C52 38 40 22 40 22 Z" fill="#c0392b"/>
+  <!-- Drop highlight -->
+  <ellipse cx="36" cy="42" rx="4" ry="6" fill="rgba(255,255,255,0.15)" transform="rotate(-15 36 42)"/>
+</svg>

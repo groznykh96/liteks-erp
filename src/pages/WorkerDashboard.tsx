@@ -43,6 +43,7 @@ interface Stage {
     qtyIn: number | null;
     batch: {
         batchNumber: string;
+        route?: string;
         task: {
             taskNumber: string;
             nomenclature: Nomenclature;
@@ -145,6 +146,7 @@ export default function WorkerDashboard() {
     const [stageQtyOut, setStageQtyOut] = useState('');
     const [stageQtyRejected, setStageQtyRejected] = useState('0');
     const [stageNote, setStageNote] = useState('');
+    const [stageNewBatchNumber, setStageNewBatchNumber] = useState('');
 
     const handleStartStage = async (stageId: number) => {
         try {
@@ -160,19 +162,31 @@ export default function WorkerDashboard() {
         if (!stageReportModal.stage) return;
 
         try {
+            const isHtsPouring = stageReportModal.stage.stage === 'POURING' && stageReportModal.stage.batch.route === 'HTS';
+            if (isHtsPouring && !stageNewBatchNumber) {
+                alert('Укажите номер партии для дальнейшего следования!');
+                return;
+            }
+
             await api.completeStage(stageReportModal.stage.id, {
                 qtyOut: Number(stageQtyOut),
                 qtyRejected: Number(stageQtyRejected),
-                note: stageNote
+                note: stageNote,
+                newBatchNumber: isHtsPouring ? stageNewBatchNumber : undefined
             });
             setStageReportModal({ isOpen: false, stage: null });
             setStageQtyOut('');
             setStageQtyRejected('0');
             setStageNote('');
+            setStageNewBatchNumber('');
             loadData();
             alert('Этап успешно завершен');
-        } catch (e) {
-            alert('Ошибка при завершении этапа');
+        } catch (e: any) {
+            if (e.response && e.response.status === 409) {
+                alert(e.response.data.error || 'Партия с таким номером уже существует!');
+            } else {
+                alert('Ошибка при завершении этапа');
+            }
         }
     };
 
@@ -247,6 +261,7 @@ export default function WorkerDashboard() {
                                     <button onClick={() => {
                                         setStageReportModal({ isOpen: true, stage: s });
                                         setStageQtyOut(s.qtyIn ? s.qtyIn.toString() : '');
+                                        setStageNewBatchNumber('');
                                     }} className="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-2.5 rounded transition-colors text-sm shadow-md flex items-center justify-center gap-2">
                                         <CheckSquare size={16} /> Завершить этап
                                     </button>
@@ -433,12 +448,21 @@ export default function WorkerDashboard() {
                                         className="w-full bg-neutral-900 border border-neutral-700 rounded p-2 text-white outline-none focus:border-green-500 transition-colors font-mono text-lg" />
                                 </div>
                             </div>
-                            <div>
-                                <label className="block text-neutral-400 mb-1 font-semibold uppercase text-xs tracking-wider">Уникальный Номер Партии</label>
-                                <input type="text" value={batchNumber} onChange={e => setBatchNumber(e.target.value)} required placeholder="Напр: ХТС-24-100"
-                                    className="w-full bg-neutral-900 border border-neutral-700 rounded p-2 text-white outline-none focus:border-green-500 transition-colors font-mono text-lg uppercase" />
-                                <p className="text-[10px] text-neutral-500 mt-1">ОТК будет принимать детали по этому номеру.</p>
-                            </div>
+                            {reportTaskId && tasks.find(t => t.id === reportTaskId)?.method.name.toUpperCase().includes('ХТС') ? (
+                                <div className="col-span-2">
+                                    <div className="p-3 bg-blue-900/20 border border-blue-800 rounded text-blue-300 text-[11px] leading-relaxed">
+                                        <strong className="block mb-1 text-blue-400">Внимание (ХТС):</strong>
+                                        Вы создаете заготовки (формируете). Уникальный номер партии будет присвоен заливщиком на следующем этапе.
+                                    </div>
+                                </div>
+                            ) : (
+                                <div>
+                                    <label className="block text-neutral-400 mb-1 font-semibold uppercase text-xs tracking-wider">Уникальный Номер Партии</label>
+                                    <input type="text" value={batchNumber} onChange={e => setBatchNumber(e.target.value)} required placeholder="Напр: ХТС-24-100"
+                                        className="w-full bg-neutral-900 border border-neutral-700 rounded p-2 text-white outline-none focus:border-green-500 transition-colors font-mono text-lg uppercase" />
+                                    <p className="text-[10px] text-neutral-500 mt-1">ОТК будет принимать детали по этому номеру.</p>
+                                </div>
+                            )}
                             <div className="flex gap-4 mt-6">
                                 <button type="button" onClick={() => setReportTaskId(null)} className="flex-1 bg-neutral-700 hover:bg-neutral-600 text-white font-bold py-2 rounded transition-colors">Отмена</button>
                                 <button type="submit" className="flex-1 bg-green-600 hover:bg-green-500 text-white font-bold py-2 rounded transition-colors shadow-md">Сдать партию</button>
@@ -484,6 +508,15 @@ export default function WorkerDashboard() {
                                 <input type="text" value={stageNote} onChange={e => setStageNote(e.target.value)} placeholder="Опционально..."
                                     className="w-full bg-neutral-900 border border-neutral-700 rounded p-2 text-white outline-none focus:border-blue-500 transition-colors" />
                             </div>
+
+                            {stageReportModal.stage.stage === 'POURING' && stageReportModal.stage.batch.route === 'HTS' && (
+                                <div className="mt-4 pt-4 border-t border-neutral-700">
+                                    <label className="block text-neutral-400 mb-1 font-semibold uppercase text-xs tracking-wider text-green-400">Присвоить Партию (Для ОТК)</label>
+                                    <input type="text" value={stageNewBatchNumber} onChange={e => setStageNewBatchNumber(e.target.value)} required placeholder="Напр: ХТС-24-100"
+                                        className="w-full bg-neutral-900 border border-green-700/50 rounded p-2 text-white outline-none focus:border-green-500 transition-colors font-mono text-lg uppercase" />
+                                    <p className="text-[10px] text-neutral-500 mt-1">Укажите постоянный номер партии, по которому деталь пойдет дальше.</p>
+                                </div>
+                            )}
                             <div className="flex gap-4 mt-6">
                                 <button type="button" onClick={() => setStageReportModal({ isOpen: false, stage: null })} className="flex-1 bg-neutral-700 hover:bg-neutral-600 text-white font-bold py-2 rounded transition-colors">Отмена</button>
                                 <button type="submit" className="flex-1 bg-green-600 hover:bg-green-500 text-white font-bold py-2 rounded transition-colors shadow-md">Завершить</button>

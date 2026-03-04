@@ -139,7 +139,7 @@ router.post('/:id/ship', async (req: Request, res: Response) => {
                 const wItems = await tx.warehouseItem.findMany({
                     where: {
                         nomId: item.nomId,
-                        batchId: item.batchId || undefined, // if null, any batch. If specified, only that batch
+                        batchId: item.batchId, // strictly match null or number
                         status: 'AVAILABLE',
                         quantity: { gt: 0 }
                     },

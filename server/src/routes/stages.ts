@@ -111,7 +111,7 @@ router.post('/:id/start', authenticateToken, async (req: Request, res: Response)
 router.post('/:id/complete', authenticateToken, async (req: Request, res: Response) => {
     const user = (req as any).user;
     const stageId = parseInt(req.params.id as string);
-    const { qtyOut, qtyRejected, note } = req.body;
+    const { qtyOut, qtyRejected, note, newBatchNumber } = req.body;
 
     if (qtyOut === undefined || qtyOut === null) {
         return res.status(400).json({ error: 'Укажите количество годных (qtyOut)' });
@@ -144,6 +144,16 @@ router.post('/:id/complete', authenticateToken, async (req: Request, res: Respon
                 },
             });
 
+            if (newBatchNumber) {
+                const exist = await tx.batch.findUnique({ where: { batchNumber: newBatchNumber } });
+                if (exist) throw new Error('DUPLICATE_BATCH');
+
+                await tx.batch.update({
+                    where: { id: batch.id },
+                    data: { batchNumber: newBatchNumber }
+                });
+            }
+
             if (nextStageName) {
                 const nextStage = await tx.productionStage.findFirst({
                     where: { batchId: batch.id, stage: nextStageName, status: 'PENDING' },
@@ -166,8 +176,11 @@ router.post('/:id/complete', authenticateToken, async (req: Request, res: Respon
             nextStage: nextStageName,
             nextStageLabel: STAGE_LABELS[nextStageName || ''] || null,
         });
-    } catch (e) {
+    } catch (e: any) {
         console.error(e);
+        if (e.message === 'DUPLICATE_BATCH') {
+            return res.status(409).json({ error: 'Партия с таким номером уже существует' });
+        }
         res.status(500).json({ error: 'Server error' });
     }
 });

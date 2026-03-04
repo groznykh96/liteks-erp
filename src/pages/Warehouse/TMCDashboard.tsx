@@ -3,7 +3,7 @@ import { api } from '../../api';
 import { Package, Truck, Calculator, MapPin, Plus, Calendar } from 'lucide-react';
 
 export default function TMCDashboard() {
-    const [activeTab, setActiveTab] = useState<'inventory' | 'shipping' | 'salary'>('inventory');
+    const [activeTab, setActiveTab] = useState<'inventory' | 'shipping' | 'registry' | 'salary'>('inventory');
 
     return (
         <div className="flex flex-col gap-6 w-full max-w-7xl mx-auto">
@@ -29,6 +29,13 @@ export default function TMCDashboard() {
                         <Truck size={16} /> Отгрузки
                     </button>
                     <button
+                        onClick={() => setActiveTab('registry')}
+                        className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md transition-colors ${activeTab === 'registry' ? 'bg-neutral-700 text-white shadow' : 'text-neutral-400 hover:text-neutral-200'
+                            }`}
+                    >
+                        <Package size={16} /> Реестр отгрузок
+                    </button>
+                    <button
                         onClick={() => setActiveTab('salary')}
                         className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md transition-colors ${activeTab === 'salary' ? 'bg-neutral-700 text-white shadow' : 'text-neutral-400 hover:text-neutral-200'
                             }`}
@@ -41,6 +48,7 @@ export default function TMCDashboard() {
             <div className="bg-neutral-800 rounded-xl border border-neutral-700/50 p-6 shadow-sm min-h-[500px]">
                 {activeTab === 'inventory' && <InventoryTab />}
                 {activeTab === 'shipping' && <ShippingTab />}
+                {activeTab === 'registry' && <RegistryTab />}
                 {activeTab === 'salary' && <SalaryTab />}
             </div>
         </div>
@@ -142,7 +150,7 @@ function ShippingTab() {
     const [loading, setLoading] = useState(true);
     const [isCreating, setIsCreating] = useState(false);
     const [newOrder, setNewOrder] = useState({ orderId: '', notes: '', items: [] as any[] });
-    const [availableNomenclatures, setAvailableNomenclatures] = useState<any[]>([]);
+    const [warehouseStock, setWarehouseStock] = useState<any[]>([]);
 
     const loadOrders = async () => {
         setLoading(true);
@@ -156,32 +164,46 @@ function ShippingTab() {
         }
     };
 
-    const loadNomenclatures = async () => {
+    const loadWarehouseStock = async () => {
         try {
-            const data = await api.getNomenclature();
-            setAvailableNomenclatures(data);
+            const data = await api.getWarehouseInventory();
+            setWarehouseStock(data.filter((item: any) => item.quantity > 0 && item.status === 'AVAILABLE'));
         } catch (e) { console.error(e); }
     };
 
     useEffect(() => {
         loadOrders();
-        loadNomenclatures();
+        loadWarehouseStock();
     }, []);
 
     const handleCreateOrder = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
-            await api.createShippingOrder(newOrder);
+            const payloadItems = newOrder.items.map(i => {
+                const wi = warehouseStock.find(w => w.id === parseInt(i.warehouseItemId));
+                if (!wi) throw new Error('Складская позиция не найдена');
+                return {
+                    nomId: wi.nomId,
+                    batchId: wi.batchId || null,
+                    requiredQty: i.requiredQty
+                };
+            });
+
+            await api.createShippingOrder({
+                orderId: newOrder.orderId,
+                notes: newOrder.notes,
+                items: payloadItems
+            });
             setIsCreating(false);
             setNewOrder({ orderId: '', notes: '', items: [] });
             loadOrders();
         } catch (e: any) {
-            alert(e.response?.data?.error || 'Ошибка создания задания');
+            alert(e.message || e.response?.data?.error || 'Ошибка создания задания');
         }
     };
 
     const handleAddItem = () => {
-        setNewOrder(prev => ({ ...prev, items: [...prev.items, { nomId: '', batchId: '', requiredQty: 1 }] }));
+        setNewOrder(prev => ({ ...prev, items: [...prev.items, { warehouseItemId: '', requiredQty: 1 }] }));
     };
 
     const handleUpdateItem = (index: number, field: string, value: string) => {
@@ -252,29 +274,25 @@ function ShippingTab() {
 
                     <div className="space-y-2">
                         <label className="block text-xs text-neutral-400">Позиции к отгрузке</label>
-                        {newOrder.items.map((item, idx) => (
+                        {newOrder.items.map((item: any, idx: number) => (
                             <div key={idx} className="flex flex-wrap md:flex-nowrap gap-2 items-center bg-neutral-800 p-2 rounded border border-neutral-700">
                                 <select
                                     className="flex-1 bg-neutral-700 text-white text-sm rounded px-2 py-1.5 outline-none"
-                                    value={item.nomId}
-                                    onChange={e => handleUpdateItem(idx, 'nomId', e.target.value)}
+                                    value={item.warehouseItemId}
+                                    onChange={e => handleUpdateItem(idx, 'warehouseItemId', e.target.value)}
                                     required
                                 >
-                                    <option value="">-- Выберите деталь --</option>
-                                    {availableNomenclatures.map(n => (
-                                        <option key={n.id} value={n.id}>{n.name}</option>
+                                    <option value="">-- Выберите деталь со склада --</option>
+                                    {warehouseStock.map((n: any) => (
+                                        <option key={n.id} value={n.id}>
+                                            {n.nomenclature.name} {n.batch ? `(Партия: ${n.batch.batchNumber})` : '(Без партии)'} - Локация: {n.location} (В наличии: {n.quantity})
+                                        </option>
                                     ))}
                                 </select>
                                 <input
-                                    type="text"
-                                    placeholder="ID Партии (опц.)"
-                                    value={item.batchId}
-                                    onChange={e => handleUpdateItem(idx, 'batchId', e.target.value)}
-                                    className="w-32 bg-neutral-700 text-white text-sm rounded px-2 py-1.5 outline-none"
-                                />
-                                <input
                                     type="number"
                                     min="1"
+                                    max={warehouseStock.find(w => w.id === parseInt(item.warehouseItemId))?.quantity || ""}
                                     placeholder="Кол-во"
                                     value={item.requiredQty}
                                     onChange={e => handleUpdateItem(idx, 'requiredQty', e.target.value)}
@@ -365,7 +383,75 @@ function ShippingTab() {
     );
 }
 
-// --- 3. SALARY REPORT TAB ---
+// --- 3. REGISTRY TAB ---
+function RegistryTab() {
+    const [orders, setOrders] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    const loadRegistry = async () => {
+        setLoading(true);
+        try {
+            const data = await api.getShippingOrders();
+            setOrders(data.filter((o: any) => o.status === 'SHIPPED'));
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        loadRegistry();
+    }, []);
+
+    return (
+        <div className="space-y-6">
+            <div className="flex justify-between items-center">
+                <h2 className="text-lg font-semibold text-white">Реестр Отгрузок</h2>
+                <button onClick={loadRegistry} className="text-sm bg-neutral-700 text-white px-3 py-1.5 rounded hover:bg-neutral-600">
+                    Обновить
+                </button>
+            </div>
+            {loading ? (
+                <div className="text-neutral-400 text-sm">Загрузка...</div>
+            ) : orders.length === 0 ? (
+                <div className="text-neutral-400 text-sm text-center py-4">Нет записей об отгрузках</div>
+            ) : (
+                <div className="grid grid-cols-1 gap-4 text-sm">
+                    {orders.map(o => (
+                        <div key={o.id} className="border border-neutral-700 rounded-lg p-4 bg-neutral-800/50 flex flex-col md:flex-row gap-4">
+                            <div className="flex-1">
+                                <div className="flex items-center justify-between mb-2">
+                                    <h3 className="text-white font-bold text-base">Задание #{o.orderNumber}</h3>
+                                    <span className="text-neutral-500 text-xs">{new Date(o.updatedAt).toLocaleString()}</span>
+                                </div>
+                                <div className="text-neutral-400 mb-2">
+                                    Создал: <span className="text-neutral-300">{o.createdBy?.fullName || 'Н/Д'}</span> |
+                                    Отгрузил: <span className="text-neutral-300">{o.shippedBy?.fullName || 'Н/Д'}</span>
+                                    {o.notes && <><br /><span className="italic">"{o.notes}"</span></>}
+                                </div>
+                                <div className="space-y-1">
+                                    {o.items.map((i: any) => (
+                                        <div key={i.id} className="flex justify-between bg-neutral-700/30 px-3 py-1.5 rounded text-neutral-300">
+                                            <span>
+                                                {i.nomenclature.name} {i.batch ? `(Партия: ${i.batch.batchNumber})` : ''}
+                                            </span>
+                                            <span className="font-medium text-white">
+                                                {i.pickedQty} шт
+                                            </span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
+        </div>
+    );
+}
+
+// --- 4. SALARY REPORT TAB ---
 function SalaryTab() {
     const [report, setReport] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);

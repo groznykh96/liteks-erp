@@ -369,7 +369,7 @@ export const api = {
         const res = await apiClient.post(`/stages/${id}/start`);
         return res.data;
     },
-    completeStage: async (id: number, data: { qtyOut: number, qtyRejected?: number, note?: string }) => {
+    completeStage: async (id: number, data: { qtyOut: number, qtyRejected?: number, note?: string, newBatchNumber?: string }) => {
         const res = await apiClient.post(`/stages/${id}/complete`, data);
         return res.data;
     },

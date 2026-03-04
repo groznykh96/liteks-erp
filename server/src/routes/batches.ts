@@ -8,7 +8,7 @@ router.use(authenticateToken);
 const STAGE_ROUTES: Record<string, string[]> = {
     KOKIL: ['CASTING', 'TRIMMING', 'QC', 'WAREHOUSE'],
     MLPD: ['CASTING', 'TRIMMING', 'QC', 'WAREHOUSE'],
-    HTS: ['FORMING', 'POURING', 'KNOCKINGOUT', 'TRIMMING', 'FINISHING', 'QC', 'WAREHOUSE'],
+    HTS: ['FORMING', 'POURING', 'KNOCKINGOUT', 'TRIMMING', 'FINISHING', 'HEAT_TREATMENT', 'QC', 'WAREHOUSE'],
 };
 
 // Get Batches
@@ -48,23 +48,29 @@ router.post('/', async (req: Request, res: Response) => {
         const { batchNumber, taskId, completedQuantity, meltsCount, pouringTemp, moldTemp, route } = req.body;
         const workerId = (req as any).user?.id;
 
-        if (!batchNumber || !taskId || !completedQuantity) {
+        if (!taskId || !completedQuantity) {
             return res.status(400).json({ error: 'Missing required fields' });
         }
 
-        const existingBatch = await prisma.batch.findUnique({ where: { batchNumber } });
+        const batchRoute = route || 'KOKIL';
+        const isHTS = batchRoute === 'HTS';
+        const actualBatchNumber = batchNumber || (isHTS ? `FORM-${Date.now()}` : null);
+        if (!actualBatchNumber) {
+            return res.status(400).json({ error: 'Укажите номер партии' });
+        }
+
+        const existingBatch = await prisma.batch.findUnique({ where: { batchNumber: actualBatchNumber } });
         if (existingBatch) {
             return res.status(409).json({ error: 'Партия с таким номером уже существует.' });
         }
 
-        const batchRoute = route || 'KOKIL';
         const stageChain = STAGE_ROUTES[batchRoute] || STAGE_ROUTES['KOKIL'];
         const firstStage = stageChain[0];
         const qty = parseInt(completedQuantity);
 
         const batch = await (prisma as any).batch.create({
             data: {
-                batchNumber,
+                batchNumber: actualBatchNumber,
                 taskId: parseInt(taskId),
                 completedQuantity: qty,
                 meltsCount: meltsCount ? parseInt(meltsCount) : 1,

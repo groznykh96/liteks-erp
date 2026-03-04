@@ -41,9 +41,23 @@ interface Stage {
     stageLabel: string;
     status: 'PENDING' | 'IN_PROGRESS' | 'DONE';
     qtyIn: number | null;
+    qtyOut?: number | null;
+    qtyRejected?: number | null;
     batch: {
+        id: number;
         batchNumber: string;
         route?: string;
+        currentStage?: string;
+        stages?: {
+            id: number;
+            stage: string;
+            stageLabel?: string;
+            status: string;
+            qtyIn: number | null;
+            qtyOut: number | null;
+            qtyRejected: number | null;
+            worker?: { fullName: string } | null;
+        }[];
         task: {
             taskNumber: string;
             nomenclature: Nomenclature;
@@ -113,7 +127,7 @@ export default function WorkerDashboard() {
             // Create Batch
             await api.saveBatch({
                 taskId: reportTaskId,
-                batchNumber,
+                batchNumber: isHTS ? '' : batchNumber,
                 completedQuantity: Number(completedQuantity),
                 meltsCount: Number(meltsCount),
                 pouringTemp: pouringTemp ? Number(pouringTemp) : undefined,
@@ -213,6 +227,39 @@ export default function WorkerDashboard() {
 
             {/* ПРОИЗВОДСТВЕННЫЕ ЭТАПЫ (НОВОЕ) */}
             <h3 className="text-xl font-bold mt-8 border-b border-neutral-700 pb-2 text-blue-400">Мои производственные этапы</h3>
+
+            {/* BATCH PROGRESS TRACKER */}
+            {stages.length > 0 && (
+                <div className="space-y-3 mt-4">
+                    {Array.from(new Set(stages.map(s => s.batch.id))).map(batchId => {
+                        const batchStage = stages.find(s => s.batch.id === batchId);
+                        if (!batchStage) return null;
+                        const allStages = batchStage.batch.stages || [];
+                        return (
+                            <div key={batchId} className="bg-neutral-800/50 border border-neutral-700/50 rounded-xl p-4">
+                                <div className="flex items-center justify-between mb-3">
+                                    <div>
+                                        <span className="font-mono font-bold text-neutral-200">{batchStage.batch.batchNumber}</span>
+                                        <span className="text-xs text-neutral-500 ml-2">{batchStage.batch.task.nomenclature.code} — {batchStage.batch.task.nomenclature.name}</span>
+                                    </div>
+                                    <span className="text-[10px] font-bold uppercase px-2 py-1 rounded bg-purple-900/40 text-purple-300 border border-purple-700/40">{batchStage.batch.task.method.name}</span>
+                                </div>
+                                <div className="flex gap-1 flex-wrap">
+                                    {allStages.map(st => (
+                                        <div key={st.id} className={`flex-1 min-w-[60px] text-center px-1 py-2 rounded text-[9px] font-bold uppercase tracking-wide border transition-all
+                                            ${st.status === 'DONE' ? 'bg-green-900/30 text-green-400 border-green-700/50' : st.status === 'IN_PROGRESS' ? 'bg-blue-900/30 text-blue-400 border-blue-700/50 animate-pulse' : 'bg-neutral-900 text-neutral-500 border-neutral-700/40'}`}>
+                                            <div>{st.stageLabel || st.stage}</div>
+                                            {st.status === 'DONE' && <div className="mt-1 text-[8px] text-neutral-400">{st.qtyOut ?? '-'} шт {st.qtyRejected ? `(брак: ${st.qtyRejected})` : ''}</div>}
+                                            {st.status === 'IN_PROGRESS' && <div className="mt-1 text-[8px] text-blue-300">▶ В работе</div>}
+                                            {st.worker && st.status === 'DONE' && <div className="text-[7px] text-neutral-500 mt-0.5">{st.worker.fullName.split(' ')[0]}</div>}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+            )}
 
             {loading ? (
                 <div className="text-neutral-400 animate-pulse">Загрузка этапов...</div>
@@ -449,10 +496,10 @@ export default function WorkerDashboard() {
                                 </div>
                             </div>
                             {reportTaskId && tasks.find(t => t.id === reportTaskId)?.method.name.toUpperCase().includes('ХТС') ? (
-                                <div className="col-span-2">
+                                <div>
                                     <div className="p-3 bg-blue-900/20 border border-blue-800 rounded text-blue-300 text-[11px] leading-relaxed">
-                                        <strong className="block mb-1 text-blue-400">Внимание (ХТС):</strong>
-                                        Вы создаете заготовки (формируете). Уникальный номер партии будет присвоен заливщиком на следующем этапе.
+                                        <strong className="block mb-1 text-blue-400">Формовка (ХТС):</strong>
+                                        Вы создаёте заготовки. Номер партии будет присвоен заливщиком. Просто укажите количество заготовок.
                                     </div>
                                 </div>
                             ) : (

@@ -8,7 +8,7 @@ const router = express.Router();
 const STAGE_ROUTES: Record<string, string[]> = {
     KOKIL: ['CASTING', 'TRIMMING', 'QC', 'WAREHOUSE'],
     MLPD: ['CASTING', 'TRIMMING', 'QC', 'WAREHOUSE'],
-    HTS: ['FORMING', 'POURING', 'KNOCKINGOUT', 'TRIMMING', 'FINISHING', 'QC', 'WAREHOUSE'],
+    HTS: ['FORMING', 'POURING', 'KNOCKINGOUT', 'TRIMMING', 'FINISHING', 'HEAT_TREATMENT', 'QC', 'WAREHOUSE'],
 };
 
 // Роли, разрешённые для каждого этапа
@@ -19,6 +19,7 @@ const STAGE_ROLES: Record<string, string[]> = {
     KNOCKINGOUT: ['KNOCKER', 'WORKER'],
     TRIMMING: ['TRIMMER', 'WORKER'],
     FINISHING: ['FINISHER', 'WORKER'],
+    HEAT_TREATMENT: ['WORKER', 'FINISHER'],
     QC: ['OTK', 'ADMIN'],
     WAREHOUSE: ['TMC', 'STOREKEEPER', 'ADMIN'],
 };
@@ -30,6 +31,7 @@ const STAGE_LABELS: Record<string, string> = {
     KNOCKINGOUT: 'Выбивка',
     TRIMMING: 'Обрубка',
     FINISHING: 'Доработка',
+    HEAT_TREATMENT: 'Термообработка',
     QC: 'ОТК',
     WAREHOUSE: 'Склад',
 };
@@ -66,6 +68,10 @@ router.get('/my', authenticateToken, async (req: Request, res: Response) => {
                         task: {
                             include: { nomenclature: true, method: true },
                         },
+                        stages: {
+                            include: { worker: { select: { id: true, fullName: true } } },
+                            orderBy: { id: 'asc' },
+                        },
                     },
                 },
                 worker: { select: { id: true, fullName: true, role: true } },
@@ -80,6 +86,13 @@ router.get('/my', authenticateToken, async (req: Request, res: Response) => {
             nextStageLabel: s.batch.route
                 ? STAGE_LABELS[getNextStage(s.batch.route, s.stage) || ''] || null
                 : null,
+            batch: {
+                ...s.batch,
+                stages: s.batch.stages.map((st: any) => ({
+                    ...st,
+                    stageLabel: STAGE_LABELS[st.stage] || st.stage,
+                })),
+            },
         })));
     } catch (e) {
         console.error(e);

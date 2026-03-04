@@ -345,6 +345,14 @@ export const api = {
         const res = await apiClient.post(`/shipping/${id}/ship`);
         return res.data;
     },
+    confirmShippingOrder: async (id: number) => {
+        const res = await apiClient.post(`/shipping/${id}/confirm`);
+        return res.data;
+    },
+    getShippingEmployees: async () => {
+        const res = await apiClient.get('/shipping/employees');
+        return res.data;
+    },
 
     // --- SALARY ---
     getSalaryReport: async (params?: { startDate?: string; endDate?: string; workerId?: number }) => {

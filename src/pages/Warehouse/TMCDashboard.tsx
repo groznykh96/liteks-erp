@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../../api';
-import { Package, Truck, Calculator, MapPin, Plus, Calendar } from 'lucide-react';
+import { Package, Truck, Calculator, MapPin, Plus, Calendar, UserCheck, Check } from 'lucide-react';
 
 export default function TMCDashboard() {
     const [activeTab, setActiveTab] = useState<'inventory' | 'shipping' | 'registry' | 'salary'>('inventory');
@@ -149,8 +149,9 @@ function ShippingTab() {
     const [orders, setOrders] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [isCreating, setIsCreating] = useState(false);
-    const [newOrder, setNewOrder] = useState({ orderId: '', notes: '', items: [] as any[] });
+    const [newOrder, setNewOrder] = useState({ orderId: '', notes: '', assignedToId: '', items: [] as any[] });
     const [warehouseStock, setWarehouseStock] = useState<any[]>([]);
+    const [employees, setEmployees] = useState<any[]>([]);
 
     const loadOrders = async () => {
         setLoading(true);
@@ -171,9 +172,17 @@ function ShippingTab() {
         } catch (e) { console.error(e); }
     };
 
+    const loadEmployees = async () => {
+        try {
+            const data = await api.getShippingEmployees();
+            setEmployees(data);
+        } catch (e) { console.error(e); }
+    };
+
     useEffect(() => {
         loadOrders();
         loadWarehouseStock();
+        loadEmployees();
     }, []);
 
     const handleCreateOrder = async (e: React.FormEvent) => {
@@ -192,13 +201,24 @@ function ShippingTab() {
             await api.createShippingOrder({
                 orderId: newOrder.orderId,
                 notes: newOrder.notes,
+                assignedToId: newOrder.assignedToId || null,
                 items: payloadItems
             });
             setIsCreating(false);
-            setNewOrder({ orderId: '', notes: '', items: [] });
+            setNewOrder({ orderId: '', notes: '', assignedToId: '', items: [] });
             loadOrders();
         } catch (e: any) {
             alert(e.message || e.response?.data?.error || 'Ошибка создания задания');
+        }
+    };
+
+    const handleConfirmOrder = async (id: number) => {
+        if (!confirm('Подтвердить задание на отгрузку?')) return;
+        try {
+            await api.confirmShippingOrder(id);
+            loadOrders();
+        } catch (e: any) {
+            alert(e.response?.data?.error || 'Ошибка подтверждения');
         }
     };
 
@@ -249,7 +269,7 @@ function ShippingTab() {
                 <form onSubmit={handleCreateOrder} className="bg-neutral-700/30 border border-neutral-600 rounded-lg p-4 space-y-4">
                     <h3 className="text-white font-medium">Новое задание на отгрузку</h3>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div>
                             <label className="block text-xs text-neutral-400 mb-1">ID Заказа (опционально)</label>
                             <input
@@ -259,6 +279,21 @@ function ShippingTab() {
                                 className="w-full bg-neutral-800 border border-neutral-600 text-white text-sm rounded px-3 py-2 outline-none focus:border-blue-500"
                                 placeholder="Номер или ID"
                             />
+                        </div>
+                        <div>
+                            <label className="block text-xs text-neutral-400 mb-1">Назначить сотрудника</label>
+                            <select
+                                value={newOrder.assignedToId}
+                                onChange={e => setNewOrder({ ...newOrder, assignedToId: e.target.value })}
+                                className="w-full bg-neutral-800 border border-neutral-600 text-white text-sm rounded px-3 py-2 outline-none focus:border-blue-500"
+                            >
+                                <option value="">-- Не назначен --</option>
+                                {employees.map((emp: any) => (
+                                    <option key={emp.id} value={emp.id}>
+                                        {emp.fullName} ({emp.role})
+                                    </option>
+                                ))}
+                            </select>
                         </div>
                         <div>
                             <label className="block text-xs text-neutral-400 mb-1">Заметки / Примечание</label>
@@ -332,15 +367,17 @@ function ShippingTab() {
                                 <div className="flex items-center justify-between mb-2">
                                     <h3 className="text-white font-bold text-base">Задание #{o.orderNumber}</h3>
                                     <span className={`px-2 py-0.5 rounded text-xs font-bold ${o.status === 'NEW' ? 'bg-blue-500/10 text-blue-400' :
-                                        o.status === 'GATHERING' ? 'bg-orange-500/10 text-orange-400' :
-                                            o.status === 'READY' ? 'bg-green-500/10 text-green-400' :
-                                                'bg-neutral-600/50 text-neutral-400'
+                                        o.status === 'CONFIRMED' ? 'bg-purple-500/10 text-purple-400' :
+                                            o.status === 'GATHERING' ? 'bg-orange-500/10 text-orange-400' :
+                                                o.status === 'READY' ? 'bg-green-500/10 text-green-400' :
+                                                    'bg-neutral-600/50 text-neutral-400'
                                         }`}>
-                                        {o.status === 'NEW' ? 'Новый' : o.status === 'GATHERING' ? 'Собирается' : o.status === 'READY' ? 'Собран' : 'Отгружен'}
+                                        {o.status === 'NEW' ? 'Новый' : o.status === 'CONFIRMED' ? 'Подтверждён' : o.status === 'GATHERING' ? 'Собирается' : o.status === 'READY' ? 'Собран' : 'Отгружен'}
                                     </span>
                                 </div>
                                 <div className="text-neutral-400 mb-2">
                                     Создал: <span className="text-neutral-300">{o.createdBy?.fullName}</span><br />
+                                    {o.assignedTo && <><UserCheck size={14} className="inline text-blue-400" /> Назначен: <span className="text-blue-300">{o.assignedTo.fullName}</span><br /></>}
                                     {o.notes && <span className="italic">"{o.notes}"</span>}
                                 </div>
                                 <div className="space-y-1">
@@ -361,6 +398,14 @@ function ShippingTab() {
                                 </div>
                             </div>
                             <div className="flex flex-col justify-end gap-2 border-t md:border-t-0 md:border-l border-neutral-700 pt-3 md:pt-0 md:pl-4 min-w-[140px]">
+                                {o.status === 'NEW' && (
+                                    <button
+                                        onClick={() => handleConfirmOrder(o.id)}
+                                        className="w-full bg-blue-600 hover:bg-blue-500 text-white font-medium py-2 rounded transition-colors flex items-center justify-center gap-1"
+                                    >
+                                        <Check size={16} /> Подтвердить
+                                    </button>
+                                )}
                                 {o.status === 'READY' && (
                                     <button
                                         onClick={() => handleShipOrder(o.id)}

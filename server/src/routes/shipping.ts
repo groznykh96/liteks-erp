@@ -18,8 +18,9 @@ router.get('/', async (req: Request, res: Response) => {
         const orders = await prisma.shippingOrder.findMany({
             include: {
                 order: true,
-                createdBy: { select: { fullName: true } },
-                shippedBy: { select: { fullName: true } },
+                createdBy: { select: { id: true, fullName: true } },
+                shippedBy: { select: { id: true, fullName: true } },
+                assignedTo: { select: { id: true, fullName: true, role: true } },
                 items: {
                     include: {
                         nomenclature: true,
@@ -37,13 +38,32 @@ router.get('/', async (req: Request, res: Response) => {
     }
 });
 
+// Get available employees (for assignment dropdown)
+router.get('/employees', async (req: Request, res: Response) => {
+    try {
+        const userRole = (req as any).user?.role;
+        if (!isTMC(userRole)) return res.status(403).json({ error: 'Доступ запрещен' });
+
+        const employees = await prisma.user.findMany({
+            where: { isActive: true },
+            select: { id: true, fullName: true, role: true, department: true },
+            orderBy: { fullName: 'asc' }
+        });
+
+        res.json(employees);
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ error: 'Ошибка получения списка сотрудников' });
+    }
+});
+
 // 2. Create shipping order
 router.post('/', async (req: Request, res: Response) => {
     try {
         const user = (req as any).user;
         if (!isTMC(user.role)) return res.status(403).json({ error: 'Только специалист ТМЦ может создавать задания на отгрузку' });
 
-        const { orderId, orderNumber, notes, items } = req.body;
+        const { orderId, orderNumber, notes, items, assignedToId } = req.body;
         // items should be array of { nomId, batchId?, requiredQty }
 
         if (!items || !items.length) {
@@ -54,6 +74,7 @@ router.post('/', async (req: Request, res: Response) => {
             data: {
                 orderNumber: orderNumber || `SHP-${new Date().getTime()}`,
                 orderId: orderId ? parseInt(orderId) : null,
+                assignedToId: assignedToId ? parseInt(assignedToId) : null,
                 notes,
                 createdById: user.id,
                 items: {
@@ -75,7 +96,31 @@ router.post('/', async (req: Request, res: Response) => {
     }
 });
 
-// 3. Storekeeper picks items
+// 3. Confirm shipping order (TMC confirms -> status CONFIRMED)
+router.post('/:id/confirm', async (req: Request, res: Response) => {
+    try {
+        const user = (req as any).user;
+        if (!isShippingStaff(user.role)) return res.status(403).json({ error: 'Нет прав для подтверждения' });
+
+        const shippingOrderId = parseInt(req.params.id as string);
+
+        const order = await prisma.shippingOrder.findUnique({ where: { id: shippingOrderId } });
+        if (!order) return res.status(404).json({ error: 'Задание не найдено' });
+        if (order.status !== 'NEW') return res.status(400).json({ error: 'Задание уже подтверждено или отгружено' });
+
+        await prisma.shippingOrder.update({
+            where: { id: shippingOrderId },
+            data: { status: 'CONFIRMED' }
+        });
+
+        res.json({ success: true });
+    } catch (e: any) {
+        console.error(e);
+        res.status(400).json({ error: e.message || 'Ошибка подтверждения' });
+    }
+});
+
+// 4. Storekeeper picks items
 router.post('/:id/pick', async (req: Request, res: Response) => {
     try {
         const user = (req as any).user;
@@ -103,7 +148,7 @@ router.post('/:id/pick', async (req: Request, res: Response) => {
 
             await tx.shippingOrder.update({
                 where: { id: shippingOrderId },
-                data: { status: isReady ? 'READY' : (isGathering ? 'GATHERING' : 'NEW') }
+                data: { status: isReady ? 'READY' : (isGathering ? 'GATHERING' : 'CONFIRMED') }
             });
         });
 
@@ -114,7 +159,7 @@ router.post('/:id/pick', async (req: Request, res: Response) => {
     }
 });
 
-// 4. Finalize shipment (deduct from warehouse)
+// 5. Finalize shipment (deduct from warehouse)
 router.post('/:id/ship', async (req: Request, res: Response) => {
     try {
         const user = (req as any).user;

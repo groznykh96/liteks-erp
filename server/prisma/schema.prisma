@@ -50,8 +50,9 @@ model User {
 
   // Warehouse/TMC System
   warehouseTransactions WarehouseTransaction[]
-  shippingOrdersCreated ShippingOrder[] @relation("ShippingOrderCreator")
-  shippingOrdersShipped ShippingOrder[] @relation("ShippingOrderShipper")
+  shippingOrdersCreated  ShippingOrder[] @relation("ShippingOrderCreator")
+  shippingOrdersShipped  ShippingOrder[] @relation("ShippingOrderShipper")
+  shippingOrdersAssigned ShippingOrder[] @relation("ShippingOrderAssignee")
 
   // Production stage tracking
   productionStages ProductionStage[] @relation("StageWorker")
@@ -562,17 +563,19 @@ model ShippingOrder {
   id           Int      @id @default(autoincrement())
   orderNumber  String   @unique // e.g. "SHP-2023-001"
   orderId      Int?     // Reference to the main Sales Order if applicable
-  status       String   @default("NEW") // NEW, GATHERING, SHIPPED
+  status       String   @default("NEW") // NEW, CONFIRMED, GATHERING, READY, SHIPPED
   notes        String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
   createdById  Int      // TMC who created the shipment tasks
   shippedById  Int?     // Storekeeper who dispatched the shipment
+  assignedToId Int?     // Employee assigned to handle the shipment
 
   order        Order?   @relation(fields: [orderId], references: [id])
   createdBy    User     @relation("ShippingOrderCreator", fields: [createdById], references: [id])
   shippedBy    User?    @relation("ShippingOrderShipper", fields: [shippedById], references: [id])
+  assignedTo   User?    @relation("ShippingOrderAssignee", fields: [assignedToId], references: [id])
   
   items        ShippingOrderItem[]
 }

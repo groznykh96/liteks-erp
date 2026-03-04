@@ -57,6 +57,7 @@ app.use('/api/director-tasks', directorTasksRouter);
 app.use('/api/orders', ordersRouter);
 // Instructions must be mounted BEFORE the generic /api router (which has global auth)
 app.use('/api/instructions', instructionsRouter);
+app.use('/api/training', trainingRouter);
 
 app.get('/api/health', (req, res) => {
     res.json({ status: 'ok', message: 'Foundry ERP Backend is running' });

@@ -133,14 +133,6 @@ export default function TrainingAdmin() {
         return <div className="p-4 text-red-500">Доступ запрещен.</div>;
     }
 
-    // Group employees by department for easier selection
-    const empByDept = employees.reduce((acc: Record<string, Employee[]>, emp) => {
-        const dep = emp.department || 'Без отдела';
-        if (!acc[dep]) acc[dep] = [];
-        acc[dep].push(emp);
-        return acc;
-    }, {});
-
     const filteredEmployees = employeeSearch
         ? employees.filter(e => e.fullName.toLowerCase().includes(employeeSearch.toLowerCase()) || (e.department || '').toLowerCase().includes(employeeSearch.toLowerCase()))
         : employees;

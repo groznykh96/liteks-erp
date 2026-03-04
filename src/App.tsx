@@ -182,7 +182,7 @@ function MainLayout() {
               <Route path="/my-director-tasks" element={<ProtectedRoute><MyDirectorTasks /></ProtectedRoute>} />
               <Route path="/sales" element={<ProtectedRoute><SalesDashboard /></ProtectedRoute>} />
               <Route path="/master-orders" element={<ProtectedRoute><MasterOrders /></ProtectedRoute>} />
-              <Route path="/production-board" element={<RoleRoute roles={['MASTER', 'ADMIN', 'DIRECTOR']}><ProductionBoard /></RoleRoute>} />
+              <Route path="/production-board" element={<ProtectedRoute><ProductionBoard /></ProtectedRoute>} />
               <Route path="/production-stats" element={<RoleRoute roles={['MASTER', 'ADMIN', 'DIRECTOR']}><ProductionStats /></RoleRoute>} />
 
               {/* Training and Instructions Modules */}

@@ -19,13 +19,9 @@ import ordersRouter from './routes/orders';
 import instructionsRouter from './routes/instructions';
 import trainingRouter from './routes/training';
 
-import { Pool } from 'pg';
-import { PrismaPg } from '@prisma/adapter-pg';
+import { pool } from './db';
 
 const app = express();
-const pool = new Pool({ connectionString: String(process.env.DATABASE_URL) });
-const adapter = new PrismaPg(pool);
-const prisma = new PrismaClient({ adapter });
 const PORT = process.env.PORT || 4000;
 
 app.use(cors({

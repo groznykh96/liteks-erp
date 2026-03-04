@@ -1,14 +1,8 @@
 import { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
+import prisma from '../db';
 
-import { Pool } from 'pg';
-import { PrismaPg } from '@prisma/adapter-pg';
-
-const pool = new Pool({ connectionString: String(process.env.DATABASE_URL) });
-const adapter = new PrismaPg(pool);
-const prisma = new PrismaClient({ adapter });
 const SECRET = process.env.JWT_SECRET || 'fallback_secret';
 
 export const login = async (req: Request, res: Response) => {

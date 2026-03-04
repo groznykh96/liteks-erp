@@ -1,12 +1,6 @@
 import { Router, Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
-import { Pool } from 'pg';
-import { PrismaPg } from '@prisma/adapter-pg';
 import { authenticateToken } from '../middlewares/authMiddleware';
-
-const pool = new Pool({ connectionString: String(process.env.DATABASE_URL) });
-const adapter = new PrismaPg(pool);
-const prisma = new PrismaClient({ adapter });
+import prisma from '../db';
 
 const router = Router();
 router.use(authenticateToken);
@@ -67,7 +61,7 @@ router.post('/', async (req: Request, res: Response) => {
         if (!clientName || !deadline) {
             return res.status(400).json({ error: 'Клиент и срок обязательны' });
         }
-        const orderNumber = `ЗАК-${new Date().getFullYear()}-${Date.now().toString().slice(-5)}`;
+        const orderNumber = `ЗАК - ${new Date().getFullYear()} -${Date.now().toString().slice(-5)} `;
         const order = await prisma.order.create({
             data: {
                 orderNumber,

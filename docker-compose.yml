@@ -42,11 +42,9 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    restart: always
-    ports:
-      - "80:80"
-      # Если нужен HTTPS, раскомментируйте порт 443 и добавьте сертификаты
-      # - "443:443"
+    restart: always - "80:80" - "443:443"
+    volumes:
+      - /etc/letsencrypt:/etc/letsencrypt:ro
     depends_on:
       - backend
 

@@ -101,6 +101,13 @@ export default function WorkerDashboard() {
         e.preventDefault();
         if (!reportTaskId) return;
 
+        const task = tasks.find(t => t.id === reportTaskId);
+        if (!task) return;
+
+        const isHTS = task.method.name.toUpperCase().includes('ХТС');
+        const isMLPD = task.method.name.toUpperCase().includes('МЛПД');
+        const route = isHTS ? 'HTS' : isMLPD ? 'MLPD' : 'KOKIL';
+
         try {
             // Create Batch
             await api.saveBatch({
@@ -109,7 +116,8 @@ export default function WorkerDashboard() {
                 completedQuantity: Number(completedQuantity),
                 meltsCount: Number(meltsCount),
                 pouringTemp: pouringTemp ? Number(pouringTemp) : undefined,
-                moldTemp: moldTemp ? Number(moldTemp) : undefined
+                moldTemp: moldTemp ? Number(moldTemp) : undefined,
+                route
             });
 
             // Mark Task as Done (optional based on quantity logic, but assuming simple flow here)
@@ -122,7 +130,7 @@ export default function WorkerDashboard() {
             setPouringTemp('');
             setMoldTemp('');
             loadData();
-            alert('Партия успешно создана и передана в ОТК');
+            alert('Партия успешно создана и передана на первый этап');
         } catch (e: any) {
             if (e.response && e.response.status === 409) {
                 alert(e.response.data.error || 'Партия с таким номером уже существует!');
@@ -303,7 +311,7 @@ export default function WorkerDashboard() {
                                         setReportTaskId(t.id);
                                         setCompletedQuantity(t.quantity.toString());
                                     }} className="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-2.5 rounded transition-colors text-sm shadow-md flex items-center justify-center gap-2">
-                                        <CheckCircle size={16} /> Сдать в ОТК (Завершить)
+                                        <CheckCircle size={16} /> Создать партию и передать дальше
                                     </button>
                                 )}
                                 {t.status === 'DONE' && (

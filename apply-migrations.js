@@ -3,7 +3,7 @@ const { Client } = require('ssh2');
 const conn = new Client();
 conn.on('ready', () => {
     console.log('SSH connected');
-    conn.exec('cd /var/www/liteks && docker logs liteks-backend-1 --tail 100', (err, stream) => {
+    conn.exec('docker exec liteks-backend-1 npx prisma db push', (err, stream) => {
         if (err) throw err;
         stream.on('close', (code, signal) => {
             console.log('Done :: code: ' + code);

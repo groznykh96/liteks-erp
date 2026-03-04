@@ -8,9 +8,9 @@ function hasRole(req: any, roles: string[]): boolean {
     return roles.includes(req.user?.role);
 }
 
-// Get all training materials (Admin / Director)
+// Get all training materials (Admin / Director / Trainer)
 router.get('/', authenticateToken, async (req: any, res) => {
-    if (!hasRole(req, ['ADMIN', 'DIRECTOR'])) {
+    if (!hasRole(req, ['ADMIN', 'DIRECTOR', 'TRAINER'])) {
         return res.status(403).json({ error: 'Доступ запрещён' });
     }
     try {
@@ -33,11 +33,11 @@ router.get('/', authenticateToken, async (req: any, res) => {
 
 // Create new training material and assign to departments / specific users / roles
 router.post('/', authenticateToken, async (req: any, res) => {
-    if (!hasRole(req, ['ADMIN', 'DIRECTOR'])) {
+    if (!hasRole(req, ['ADMIN', 'DIRECTOR', 'TRAINER'])) {
         return res.status(403).json({ error: 'Доступ запрещён' });
     }
     try {
-        const { title, description, fileUrl, departments, roles, userIds } = req.body;
+        const { title, description, fileUrl, testUrl, departments, roles, userIds } = req.body;
 
         if (!title || !fileUrl) {
             return res.status(400).json({ error: 'Title and File URL are required' });
@@ -50,7 +50,8 @@ router.post('/', authenticateToken, async (req: any, res) => {
             'OTC': 'ОТК',
             'DIRECTOR': 'Директор',
             'ADMIN': 'Администратор',
-            'SALES': 'Менеджер по продажам'
+            'SALES': 'Менеджер по продажам',
+            'TRAINER': 'Учебный центр'
         };
 
         // Combine labels for display. If I have roles like "MASTER", we can format them?
@@ -67,6 +68,7 @@ router.post('/', authenticateToken, async (req: any, res) => {
                 title,
                 description: description || null,
                 fileUrl,
+                testUrl: testUrl || null,
                 departments: combinedLabels.length > 0 ? JSON.stringify(combinedLabels) : null,
             }
         });
@@ -125,7 +127,7 @@ router.post('/', authenticateToken, async (req: any, res) => {
 
 // Delete a training material
 router.delete('/:id', authenticateToken, async (req: any, res) => {
-    if (!hasRole(req, ['ADMIN', 'DIRECTOR'])) {
+    if (!hasRole(req, ['ADMIN', 'DIRECTOR', 'TRAINER'])) {
         return res.status(403).json({ error: 'Доступ запрещён' });
     }
     try {
@@ -157,6 +159,43 @@ router.get('/my', authenticateToken, async (req: any, res) => {
     }
 });
 
+// Get relevant materials for the current user's role/department (Registry)
+router.get('/materials/relevant', authenticateToken, async (req: any, res) => {
+    try {
+        const userRoleLabel = {
+            'WORKER': 'Рабочий',
+            'MASTER': 'Мастер',
+            'TECHNOLOGIST': 'Технолог',
+            'OTC': 'ОТК',
+            'DIRECTOR': 'Директор',
+            'ADMIN': 'Администратор',
+            'SALES': 'Менеджер по продажам',
+            'TRAINER': 'Учебный центр'
+        }[req.user.role as string] || req.user.role;
+
+        const userDept = req.user.department;
+
+        const allMaterials = await prisma.trainingMaterial.findMany({
+            orderBy: { createdAt: 'desc' }
+        });
+
+        const relevantMaterials = allMaterials.filter(m => {
+            if (!m.departments) return false;
+            try {
+                const deps = JSON.parse(m.departments);
+                return deps.includes(userRoleLabel) || (userDept && deps.includes(userDept));
+            } catch (e) {
+                return false;
+            }
+        });
+
+        res.json(relevantMaterials);
+    } catch (error: any) {
+        console.error('Error fetching relevant materials:', error?.message);
+        res.status(500).json({ error: 'Failed to fetch relevant materials' });
+    }
+});
+
 // Mark a material as read
 router.post('/my/:id/read', authenticateToken, async (req: any, res) => {
     try {
@@ -185,9 +224,85 @@ router.post('/my/:id/read', authenticateToken, async (req: any, res) => {
     }
 });
 
-// Get competency matrix (Director / Admin)
+// Re-assign (reset) read status for a specific assignment
+router.post('/assignments/:id/reset', authenticateToken, async (req: any, res) => {
+    if (!hasRole(req, ['ADMIN', 'DIRECTOR', 'TRAINER'])) {
+        return res.status(403).json({ error: 'Доступ запрещён' });
+    }
+    try {
+        const assignmentId = parseInt(req.params.id);
+
+        const updated = await prisma.trainingAssignment.update({
+            where: { id: assignmentId },
+            data: {
+                status: 'PENDING',
+                readAt: null
+            }
+        });
+
+        res.json(updated);
+    } catch (error: any) {
+        console.error('Error resetting assignment:', error?.message);
+        res.status(500).json({ error: 'Failed to reset assignment' });
+    }
+});
+
+// Assign more users to an existing material
+router.post('/:id/assign', authenticateToken, async (req: any, res) => {
+    if (!hasRole(req, ['ADMIN', 'DIRECTOR', 'TRAINER'])) {
+        return res.status(403).json({ error: 'Доступ запрещён' });
+    }
+    try {
+        const materialId = parseInt(req.params.id);
+        const { departments, roles, userIds } = req.body;
+
+        const material = await prisma.trainingMaterial.findUnique({ where: { id: materialId } });
+        if (!material) return res.status(404).json({ error: 'Material not found' });
+
+        const usersToAssign = new Set<number>();
+
+        if (userIds && Array.isArray(userIds)) {
+            userIds.forEach((id: number) => usersToAssign.add(Number(id)));
+        }
+
+        if (departments && Array.isArray(departments) && departments.length > 0) {
+            const deptUsers = await prisma.user.findMany({
+                where: { department: { in: departments }, isActive: true },
+                select: { id: true }
+            });
+            deptUsers.forEach(u => usersToAssign.add(u.id));
+        }
+
+        if (roles && Array.isArray(roles) && roles.length > 0) {
+            const roleUsers = await prisma.user.findMany({
+                where: { role: { in: roles }, isActive: true },
+                select: { id: true }
+            });
+            roleUsers.forEach(u => usersToAssign.add(u.id));
+        }
+
+        if (usersToAssign.size > 0) {
+            const assignmentsData = Array.from(usersToAssign).map(userId => ({
+                userId,
+                materialId,
+                status: 'PENDING'
+            }));
+            await prisma.trainingAssignment.createMany({
+                data: assignmentsData,
+                skipDuplicates: true
+            });
+        }
+
+        res.json({ success: true, count: usersToAssign.size });
+    } catch (error: any) {
+        console.error('Error assigning more users:', error?.message, error);
+        res.status(500).json({ error: 'Failed to assign users' });
+    }
+});
+
+// Get competency matrix (Director / Admin / Trainer)
 router.get('/matrix', authenticateToken, async (req: any, res) => {
-    if (!hasRole(req, ['ADMIN', 'DIRECTOR'])) {
+    if (!hasRole(req, ['ADMIN', 'DIRECTOR', 'TRAINER'])) {
         return res.status(403).json({ error: 'Доступ запрещён' });
     }
     try {
@@ -226,7 +341,7 @@ router.get('/matrix', authenticateToken, async (req: any, res) => {
 
 // Get all users list (for Admin assignment form)
 router.get('/users-list', authenticateToken, async (req: any, res) => {
-    if (!hasRole(req, ['ADMIN', 'DIRECTOR'])) {
+    if (!hasRole(req, ['ADMIN', 'DIRECTOR', 'TRAINER'])) {
         return res.status(403).json({ error: 'Доступ запрещён' });
     }
     try {

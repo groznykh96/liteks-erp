@@ -300,5 +300,17 @@ export const api = {
     getTrainingUsers: async () => {
         const res = await apiClient.get('/training/users-list');
         return res.data;
+    },
+    getRelevantTrainingMaterials: async () => {
+        const res = await apiClient.get('/training/materials/relevant');
+        return res.data;
+    },
+    resetTrainingAssignment: async (assignmentId: number) => {
+        const res = await apiClient.post(`/training/assignments/${assignmentId}/reset`);
+        return res.data;
+    },
+    assignMoreTraining: async (materialId: number, data: any) => {
+        const res = await apiClient.post(`/training/${materialId}/assign`, data);
+        return res.data;
     }
 };

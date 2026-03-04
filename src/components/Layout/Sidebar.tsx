@@ -23,6 +23,7 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
     const isMaster = user.role === 'MASTER';
     const isTech = user.role === 'TECH' || user.role === 'TECHNOLOGIST';
     const isSales = user.role === 'SALES';
+    const isTrainer = user.role === 'TRAINER';
 
     const showTechModules = !isWorker && !isOtk && !isSales;
 
@@ -165,7 +166,7 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
                                     <BookOpen size={20} className="shrink-0" />
                                     <span className={`transition-opacity duration-200 ${isOpen ? 'opacity-100' : 'lg:hidden'}`}>Мое обучение</span>
                                 </NavLink>
-                                {(isAdmin || isDirector) && (
+                                {(isAdmin || isDirector || isTrainer) && (
                                     <>
                                         <NavLink to="/admin/training" className={navLinkClasses} title="Управление обучением">
                                             <Settings size={20} className="shrink-0" />

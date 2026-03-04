@@ -17,7 +17,7 @@ model User {
   fullName     String
   login        String   @unique
   passwordHash String
-  role         String // 'ADMIN', 'DIRECTOR', 'MASTER', 'TECHNOLOGIST', 'OTC', 'WORKER'
+  role         String // 'ADMIN', 'DIRECTOR', 'MASTER', 'TECHNOLOGIST', 'OTC', 'WORKER', 'TRAINER'
   department   String?
   isActive     Boolean  @default(true)
   createdAt    DateTime @default(now())
@@ -462,6 +462,7 @@ model TrainingMaterial {
   title       String
   description String?
   fileUrl     String // URL to PDF or other resource
+  testUrl     String? // Optional URL to external test platform
   departments String? // JSON array or comma-separated list of departments/roles it applies to
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt

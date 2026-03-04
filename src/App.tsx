@@ -7,7 +7,7 @@ import Ledger from './pages/Ledger';
 import References from './pages/References';
 import Instructions from './pages/Instructions';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
-import { ProtectedRoute, AdminRoute } from './components/Auth/ProtectedRoutes';
+import { ProtectedRoute, AdminRoute, RoleRoute } from './components/Auth/ProtectedRoutes';
 import Login from './components/Auth/Login';
 import AdminPanel from './components/Admin/AdminPanel';
 import MasterDashboard from './pages/MasterDashboard';
@@ -70,6 +70,7 @@ function HomeRedirect() {
     case 'DIRECTOR': return <Navigate to="/director" replace />;
     case 'ADMIN': return <Navigate to="/admin" replace />;
     case 'SALES': return <Navigate to="/sales" replace />;
+    case 'TRAINER': return <Navigate to="/admin/training" replace />;
     default: return <Navigate to="/calculator" replace />;
   }
 }
@@ -169,8 +170,8 @@ function MainLayout() {
 
               {/* Training and Instructions Modules */}
               <Route path="/training" element={<ProtectedRoute><MyTraining /></ProtectedRoute>} />
-              <Route path="/admin/training" element={<AdminRoute><TrainingAdmin /></AdminRoute>} />
-              <Route path="/director/matrix" element={<AdminRoute><CompetencyMatrix /></AdminRoute>} />
+              <Route path="/admin/training" element={<RoleRoute roles={['ADMIN', 'DIRECTOR', 'TRAINER']}><TrainingAdmin /></RoleRoute>} />
+              <Route path="/director/matrix" element={<RoleRoute roles={['ADMIN', 'DIRECTOR', 'TRAINER']}><CompetencyMatrix /></RoleRoute>} />
             </Routes>
           </main>
 

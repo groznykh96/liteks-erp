@@ -246,148 +246,150 @@ export default function TrainingAdmin() {
 
             {/* Create Modal */}
             {showCreate && (
-                <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4 overflow-auto">
-                    <div className="bg-neutral-800 border border-neutral-700 rounded-xl p-6 w-full max-w-2xl shadow-2xl my-4">
-                        <h3 className="text-xl font-bold mb-4">Новый обучающий материал</h3>
-                        <form onSubmit={handleCreate} className="space-y-4">
+                <div className="fixed inset-0 z-50 overflow-y-auto bg-black/70">
+                    <div className="flex min-h-full items-center justify-center p-4 sm:p-6">
+                        <div className="bg-neutral-800 border border-neutral-700 rounded-xl p-6 w-full max-w-2xl shadow-2xl mx-auto align-middle">
+                            <h3 className="text-xl font-bold mb-4">Новый обучающий материал</h3>
+                            <form onSubmit={handleCreate} className="space-y-4">
 
-                            {/* Title */}
-                            <div>
-                                <label className="block text-xs font-semibold text-neutral-400 uppercase mb-1">Название *</label>
-                                <input
-                                    required value={title} onChange={e => setTitle(e.target.value)}
-                                    className="w-full bg-neutral-900 border border-neutral-700 rounded p-2 text-white outline-none focus:border-orange-500"
-                                    placeholder="Должностная инструкция плавильщика"
-                                />
-                            </div>
-
-                            {/* Description */}
-                            <div>
-                                <label className="block text-xs font-semibold text-neutral-400 uppercase mb-1">Описание</label>
-                                <textarea
-                                    value={description} onChange={e => setDescription(e.target.value)}
-                                    rows={2}
-                                    className="w-full bg-neutral-900 border border-neutral-700 rounded p-2 text-white outline-none focus:border-orange-500 resize-none"
-                                />
-                            </div>
-
-                            {/* File URL */}
-                            <div>
-                                <label className="block text-xs font-semibold text-neutral-400 uppercase mb-1">Ссылка на файл / PDF *</label>
-                                <input
-                                    required value={fileUrl} onChange={e => setFileUrl(e.target.value)}
-                                    className="w-full bg-neutral-900 border border-neutral-700 rounded p-2 text-white outline-none focus:border-orange-500"
-                                    placeholder="https://drive.google.com/... или другой URL"
-                                />
-                                <div className="text-xs text-neutral-500 mt-1 flex gap-1 items-start">
-                                    <AlertTriangle size={12} className="shrink-0 mt-0.5" />
-                                    Вставьте ссылку на Google Диск, Яндекс.Диск или другой ресурс.
-                                </div>
-                            </div>
-
-                            {/* Assignment mode toggle */}
-                            <div>
-                                <label className="block text-xs font-semibold text-neutral-400 uppercase mb-2">Кому назначить *</label>
-                                <div className="text-sm text-neutral-500 mb-4">
-                                    Вы можете выбрать любое сочетание ролей, отделов и конкретных сотрудников.
+                                {/* Title */}
+                                <div>
+                                    <label className="block text-xs font-semibold text-neutral-400 uppercase mb-1">Название *</label>
+                                    <input
+                                        required value={title} onChange={e => setTitle(e.target.value)}
+                                        className="w-full bg-neutral-900 border border-neutral-700 rounded p-2 text-white outline-none focus:border-orange-500"
+                                        placeholder="Должностная инструкция плавильщика"
+                                    />
                                 </div>
 
-                                <div className="space-y-4">
-                                    {/* Roles */}
-                                    <div className="bg-neutral-900 border border-neutral-800 rounded p-3">
-                                        <div className="text-sm font-bold text-white mb-2">По ролям:</div>
-                                        <div className="flex flex-wrap gap-2 text-sm">
-                                            {ROLES.map(r => (
-                                                <label key={r.value} className="flex items-center gap-2 text-neutral-300 cursor-pointer p-1.5 px-2 rounded hover:bg-neutral-700 transition-colors bg-neutral-800">
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={selectedRoles.includes(r.value)}
-                                                        onChange={() => toggleRole(r.value)}
-                                                        className="rounded"
-                                                    />
-                                                    {r.label}
-                                                </label>
-                                            ))}
-                                        </div>
+                                {/* Description */}
+                                <div>
+                                    <label className="block text-xs font-semibold text-neutral-400 uppercase mb-1">Описание</label>
+                                    <textarea
+                                        value={description} onChange={e => setDescription(e.target.value)}
+                                        rows={2}
+                                        className="w-full bg-neutral-900 border border-neutral-700 rounded p-2 text-white outline-none focus:border-orange-500 resize-none"
+                                    />
+                                </div>
+
+                                {/* File URL */}
+                                <div>
+                                    <label className="block text-xs font-semibold text-neutral-400 uppercase mb-1">Ссылка на файл / PDF *</label>
+                                    <input
+                                        required value={fileUrl} onChange={e => setFileUrl(e.target.value)}
+                                        className="w-full bg-neutral-900 border border-neutral-700 rounded p-2 text-white outline-none focus:border-orange-500"
+                                        placeholder="https://drive.google.com/... или другой URL"
+                                    />
+                                    <div className="text-xs text-neutral-500 mt-1 flex gap-1 items-start">
+                                        <AlertTriangle size={12} className="shrink-0 mt-0.5" />
+                                        Вставьте ссылку на Google Диск, Яндекс.Диск или другой ресурс.
+                                    </div>
+                                </div>
+
+                                {/* Assignment mode toggle */}
+                                <div>
+                                    <label className="block text-xs font-semibold text-neutral-400 uppercase mb-2">Кому назначить *</label>
+                                    <div className="text-sm text-neutral-500 mb-4">
+                                        Вы можете выбрать любое сочетание ролей, отделов и конкретных сотрудников.
                                     </div>
 
-                                    {/* Departments */}
-                                    <div className="bg-neutral-900 border border-neutral-800 rounded p-3">
-                                        <div className="text-sm font-bold text-white mb-2">По отделам:</div>
-                                        <div className="flex flex-wrap gap-2 text-sm max-h-48 overflow-y-auto pr-1">
-                                            {DEPARTMENTS.map(d => (
-                                                <label key={d} className="flex items-center gap-2 text-neutral-300 cursor-pointer p-1.5 px-2 rounded hover:bg-neutral-700 transition-colors bg-neutral-800">
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={selectedDeps.includes(d)}
-                                                        onChange={() => toggleDep(d)}
-                                                        className="rounded"
-                                                    />
-                                                    {d}
-                                                </label>
-                                            ))}
-                                        </div>
-                                    </div>
-
-                                    {/* Specific Users */}
-                                    <div className="bg-neutral-900 border border-neutral-800 rounded p-3">
-                                        <div className="text-sm font-bold text-white mb-2">Конкретным сотрудникам:</div>
-                                        <div>
-                                            <input
-                                                type="text"
-                                                placeholder="Поиск по имени или отделу..."
-                                                value={employeeSearch}
-                                                onChange={e => setEmployeeSearch(e.target.value)}
-                                                className="w-full bg-neutral-800 border border-neutral-700 rounded p-2 text-white mb-2 outline-none focus:border-orange-500 text-sm"
-                                            />
-                                            <div className="max-h-48 overflow-y-auto border border-neutral-700 rounded bg-neutral-800">
-                                                {Object.entries(
-                                                    filteredEmployees.reduce((acc: Record<string, Employee[]>, emp) => {
-                                                        const dep = emp.department || 'Без отдела';
-                                                        if (!acc[dep]) acc[dep] = [];
-                                                        acc[dep].push(emp);
-                                                        return acc;
-                                                    }, {})
-                                                ).map(([dept, emps]) => (
-                                                    <div key={dept}>
-                                                        <div className="px-3 py-1.5 text-xs font-bold text-neutral-500 uppercase bg-neutral-900 sticky top-0">{dept}</div>
-                                                        {emps.map(emp => (
-                                                            <label key={emp.id} className="flex items-center gap-3 px-3 py-2 hover:bg-neutral-700 cursor-pointer transition-colors border-b border-neutral-800/50 last:border-0">
-                                                                <input
-                                                                    type="checkbox"
-                                                                    checked={selectedUsers.includes(emp.id)}
-                                                                    onChange={() => toggleUser(emp.id)}
-                                                                    className="rounded"
-                                                                />
-                                                                <span className="text-sm text-white">{emp.fullName}</span>
-                                                                <span className="text-xs text-neutral-500 ml-auto">{emp.role}</span>
-                                                            </label>
-                                                        ))}
-                                                    </div>
+                                    <div className="space-y-4">
+                                        {/* Roles */}
+                                        <div className="bg-neutral-900 border border-neutral-800 rounded p-3">
+                                            <div className="text-sm font-bold text-white mb-2">По ролям:</div>
+                                            <div className="flex flex-wrap gap-2 text-sm">
+                                                {ROLES.map(r => (
+                                                    <label key={r.value} className="flex items-center gap-2 text-neutral-300 cursor-pointer p-1.5 px-2 rounded hover:bg-neutral-700 transition-colors bg-neutral-800">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={selectedRoles.includes(r.value)}
+                                                            onChange={() => toggleRole(r.value)}
+                                                            className="rounded"
+                                                        />
+                                                        {r.label}
+                                                    </label>
                                                 ))}
-                                                {filteredEmployees.length === 0 && (
-                                                    <div className="p-4 text-center text-neutral-500 text-sm">Сотрудники не найдены</div>
+                                            </div>
+                                        </div>
+
+                                        {/* Departments */}
+                                        <div className="bg-neutral-900 border border-neutral-800 rounded p-3">
+                                            <div className="text-sm font-bold text-white mb-2">По отделам:</div>
+                                            <div className="flex flex-wrap gap-2 text-sm max-h-48 overflow-y-auto pr-1">
+                                                {DEPARTMENTS.map(d => (
+                                                    <label key={d} className="flex items-center gap-2 text-neutral-300 cursor-pointer p-1.5 px-2 rounded hover:bg-neutral-700 transition-colors bg-neutral-800">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={selectedDeps.includes(d)}
+                                                            onChange={() => toggleDep(d)}
+                                                            className="rounded"
+                                                        />
+                                                        {d}
+                                                    </label>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        {/* Specific Users */}
+                                        <div className="bg-neutral-900 border border-neutral-800 rounded p-3">
+                                            <div className="text-sm font-bold text-white mb-2">Конкретным сотрудникам:</div>
+                                            <div>
+                                                <input
+                                                    type="text"
+                                                    placeholder="Поиск по имени или отделу..."
+                                                    value={employeeSearch}
+                                                    onChange={e => setEmployeeSearch(e.target.value)}
+                                                    className="w-full bg-neutral-800 border border-neutral-700 rounded p-2 text-white mb-2 outline-none focus:border-orange-500 text-sm"
+                                                />
+                                                <div className="max-h-48 overflow-y-auto border border-neutral-700 rounded bg-neutral-800">
+                                                    {Object.entries(
+                                                        filteredEmployees.reduce((acc: Record<string, Employee[]>, emp) => {
+                                                            const dep = emp.department || 'Без отдела';
+                                                            if (!acc[dep]) acc[dep] = [];
+                                                            acc[dep].push(emp);
+                                                            return acc;
+                                                        }, {})
+                                                    ).map(([dept, emps]) => (
+                                                        <div key={dept}>
+                                                            <div className="px-3 py-1.5 text-xs font-bold text-neutral-500 uppercase bg-neutral-900 sticky top-0">{dept}</div>
+                                                            {emps.map(emp => (
+                                                                <label key={emp.id} className="flex items-center gap-3 px-3 py-2 hover:bg-neutral-700 cursor-pointer transition-colors border-b border-neutral-800/50 last:border-0">
+                                                                    <input
+                                                                        type="checkbox"
+                                                                        checked={selectedUsers.includes(emp.id)}
+                                                                        onChange={() => toggleUser(emp.id)}
+                                                                        className="rounded"
+                                                                    />
+                                                                    <span className="text-sm text-white">{emp.fullName}</span>
+                                                                    <span className="text-xs text-neutral-500 ml-auto">{emp.role}</span>
+                                                                </label>
+                                                            ))}
+                                                        </div>
+                                                    ))}
+                                                    {filteredEmployees.length === 0 && (
+                                                        <div className="p-4 text-center text-neutral-500 text-sm">Сотрудники не найдены</div>
+                                                    )}
+                                                </div>
+                                                {selectedUsers.length > 0 && (
+                                                    <div className="mt-2 text-sm text-orange-400 font-semibold">
+                                                        Выбрано: {selectedUsers.length} персонально
+                                                    </div>
                                                 )}
                                             </div>
-                                            {selectedUsers.length > 0 && (
-                                                <div className="mt-2 text-sm text-orange-400 font-semibold">
-                                                    Выбрано: {selectedUsers.length} персонально
-                                                </div>
-                                            )}
                                         </div>
                                     </div>
                                 </div>
-                            </div>
 
-                            <div className="flex gap-3 pt-4 border-t border-neutral-700">
-                                <button type="button" onClick={() => { setShowCreate(false); resetForm(); }} className="flex-1 bg-neutral-700 hover:bg-neutral-600 font-bold py-2 rounded text-white transition-colors">
-                                    Отмена
-                                </button>
-                                <button type="submit" className="flex-1 bg-orange-600 hover:bg-orange-500 font-bold py-2 rounded text-white transition-colors">
-                                    Сохранить и назначить
-                                </button>
-                            </div>
-                        </form>
+                                <div className="flex gap-3 pt-4 border-t border-neutral-700">
+                                    <button type="button" onClick={() => { setShowCreate(false); resetForm(); }} className="flex-1 bg-neutral-700 hover:bg-neutral-600 font-bold py-2 rounded text-white transition-colors">
+                                        Отмена
+                                    </button>
+                                    <button type="submit" className="flex-1 bg-orange-600 hover:bg-orange-500 font-bold py-2 rounded text-white transition-colors">
+                                        Сохранить и назначить
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
                     </div>
                 </div>
             )}

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { api } from '../api';
+import { useAuth } from '../contexts/AuthContext';
 import { LayoutGrid, ArrowRight, UserPlus } from 'lucide-react';
 
 interface Worker {
@@ -34,6 +35,8 @@ interface Batch {
 }
 
 export default function ProductionBoard() {
+    const { user } = useAuth();
+    const canAssign = user && ['MASTER', 'ADMIN', 'DIRECTOR'].includes(user.role);
     const [batches, setBatches] = useState<Batch[]>([]);
     const [users, setUsers] = useState<Worker[]>([]);
     const [loading, setLoading] = useState(true);
@@ -127,14 +130,14 @@ export default function ProductionBoard() {
                                     {batch.stages.map((stage, idx) => (
                                         <div key={stage.id} className="flex items-center">
                                             <div className={`w-48 p-4 rounded-lg border flex flex-col justify-between ${stage.status === 'DONE' ? 'bg-green-900/20 border-green-800/50' :
-                                                    stage.status === 'IN_PROGRESS' ? 'bg-yellow-900/20 border-yellow-500 shadow-[0_0_15px_rgba(234,179,8,0.15)]' :
-                                                        'bg-neutral-900/50 border-neutral-700/50 opacity-60'
+                                                stage.status === 'IN_PROGRESS' ? 'bg-yellow-900/20 border-yellow-500 shadow-[0_0_15px_rgba(234,179,8,0.15)]' :
+                                                    'bg-neutral-900/50 border-neutral-700/50 opacity-60'
                                                 }`}>
                                                 <div className="mb-4">
                                                     <div className="text-sm font-bold text-white mb-1">{stage.stageLabel}</div>
                                                     <div className={`text-[10px] uppercase font-bold tracking-wider ${stage.status === 'DONE' ? 'text-green-500' :
-                                                            stage.status === 'IN_PROGRESS' ? 'text-yellow-500' :
-                                                                'text-neutral-500'
+                                                        stage.status === 'IN_PROGRESS' ? 'text-yellow-500' :
+                                                            'text-neutral-500'
                                                         }`}>
                                                         {stage.status === 'DONE' ? 'Завершён' : stage.status === 'IN_PROGRESS' ? 'В работе' : 'Ожидает'}
                                                     </div>
@@ -152,7 +155,7 @@ export default function ProductionBoard() {
                                                         )}
                                                     </div>
 
-                                                    {(stage.status === 'PENDING' || stage.status === 'IN_PROGRESS') && (
+                                                    {canAssign && (stage.status === 'PENDING' || stage.status === 'IN_PROGRESS') && (
                                                         <button
                                                             onClick={() => {
                                                                 setSelectedWorkerId(stage.workerId ? String(stage.workerId) : '');

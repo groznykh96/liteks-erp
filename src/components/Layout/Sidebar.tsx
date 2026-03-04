@@ -86,17 +86,15 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
                                             <span className={`transition-opacity duration-200 ${isOpen ? 'opacity-100' : 'lg:hidden'}`}>Мои Задачи / Этапы</span>
                                         </NavLink>
                                     )}
+                                    <NavLink to="/production-board" className={navLinkClasses} title="Доска производства">
+                                        <LayoutGrid size={20} className="shrink-0" />
+                                        <span className={`transition-opacity duration-200 ${isOpen ? 'opacity-100' : 'lg:hidden'}`}>Доска производства</span>
+                                    </NavLink>
                                     {(isMaster || isDirector || isAdmin) && (
-                                        <>
-                                            <NavLink to="/production-board" className={navLinkClasses} title="Доска производства">
-                                                <LayoutGrid size={20} className="shrink-0" />
-                                                <span className={`transition-opacity duration-200 ${isOpen ? 'opacity-100' : 'lg:hidden'}`}>Доска производства</span>
-                                            </NavLink>
-                                            <NavLink to="/production-stats" className={navLinkClasses} title="Статистика цеха">
-                                                <PieChart size={20} className="shrink-0" />
-                                                <span className={`transition-opacity duration-200 ${isOpen ? 'opacity-100' : 'lg:hidden'}`}>Статистика производства</span>
-                                            </NavLink>
-                                        </>
+                                        <NavLink to="/production-stats" className={navLinkClasses} title="Статистика цеха">
+                                            <PieChart size={20} className="shrink-0" />
+                                            <span className={`transition-opacity duration-200 ${isOpen ? 'opacity-100' : 'lg:hidden'}`}>Статистика производства</span>
+                                        </NavLink>
                                     )}
                                     {(isOtk || isAdmin || isMaster || isDirector) && (
                                         <NavLink to="/otc" className={navLinkClasses} title="ОТК">

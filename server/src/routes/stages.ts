@@ -200,11 +200,6 @@ router.post('/:id/complete', authenticateToken, async (req: Request, res: Respon
 
 // GET /api/stages/board
 router.get('/board', authenticateToken, async (req: Request, res: Response) => {
-    const user = (req as any).user;
-    if (!['MASTER', 'DIRECTOR', 'ADMIN'].includes(user.role)) {
-        return res.status(403).json({ error: 'Нет доступа' });
-    }
-
     try {
         const batches = await (prisma as any).batch.findMany({
             where: {

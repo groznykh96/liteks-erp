@@ -1,0 +1,27 @@
+=== DOCKER CONTAINERS ===
+CONTAINER ID   IMAGE                COMMAND                  CREATED          STATUS                    PORTS                                         NAMES
+ab84b0c17fff   liteks-frontend      "/docker-entrypoint.…"   20 minutes ago   Up 20 minutes             0.0.0.0:80->80/tcp, [::]:80->80/tcp           liteks-frontend-1
+69d62b61c0e4   liteks-backend       "docker-entrypoint.s…"   20 minutes ago   Up 20 minutes             0.0.0.0:4000->4000/tcp, [::]:4000->4000/tcp   liteks-backend-1
+dc2df04cf624   postgres:15-alpine   "docker-entrypoint.s…"   27 hours ago     Up 27 hours (healthy)     5432/tcp                                      liteks-db-1
+8fcc6eaefb6d   4201621967c7         "/bin/sh -c 'npm run…"   27 hours ago     Exited (2) 27 hours ago                                                 elated_buck
+7bb95074f0c3   4201621967c7         "/bin/sh -c 'npm run…"   27 hours ago     Exited (2) 27 hours ago                                                 wizardly_jemison
+\n=== ROOT DIRS ===
+/root:
+total 36
+drwx------  7 root root 4096 Mar  3 07:37 .
+drwxr-xr-x 18 root root 4096 Mar  3 05:10 ..
+drwx------  3 root root 4096 Mar  2 09:09 .ansible
+-rw-r--r--  1 root root    0 Mar  2 09:13 .bash_history
+-rw-r--r--  1 root root 3106 Oct 15  2021 .bashrc
+drwx------  2 root root 4096 Mar  2 09:09 .cache
+drwx------  3 root root 4096 Mar  3 07:37 .docker
+-rw-r--r--  1 root root  161 Jul  9  2019 .profile
+drwx------  2 root root 4096 Mar  3 05:10 .ssh
+drwx------  3 root root 4096 Mar  2 09:07 snap
+
+/var/www:
+total 12
+drwxr-xr-x  3 root root 4096 Mar  3 07:12 .
+drwxr-xr-x 13 root root 4096 Mar  3 07:00 ..
+drwxr-xr-x  8 root root 4096 Mar  4 10:23 liteks
+\n=== DOCKER COMPOSE FILE CHECK ===

@@ -1,0 +1,8 @@
+=== DOCKER PS ===
+CONTAINER ID   IMAGE                COMMAND                  CREATED          STATUS                  PORTS                                         NAMES
+ab84b0c17fff   liteks-frontend      "/docker-entrypoint.…"   18 minutes ago   Up 18 minutes           0.0.0.0:80->80/tcp, [::]:80->80/tcp           liteks-frontend-1
+69d62b61c0e4   liteks-backend       "docker-entrypoint.s…"   18 minutes ago   Up 18 minutes           0.0.0.0:4000->4000/tcp, [::]:4000->4000/tcp   liteks-backend-1
+dc2df04cf624   postgres:15-alpine   "docker-entrypoint.s…"   26 hours ago     Up 26 hours (healthy)   5432/tcp                                      liteks-db-1
+\n=== DOCKER COMPOSE PS IN WWW ===
+\n=== NGINX PROXY MANAGER CONF OR LOGS ===
+bash: line 8: netstat: command not found

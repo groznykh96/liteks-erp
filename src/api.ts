@@ -354,5 +354,38 @@ export const api = {
         }
         const res = await apiClient.get(url);
         return res.data;
+    },
+
+    // --- STAGES ---
+    getMyStages: async () => {
+        const res = await apiClient.get('/stages/my');
+        return res.data;
+    },
+    startStage: async (id: number) => {
+        const res = await apiClient.post(`/stages/${id}/start`);
+        return res.data;
+    },
+    completeStage: async (id: number, data: { qtyOut: number, qtyRejected?: number, note?: string }) => {
+        const res = await apiClient.post(`/stages/${id}/complete`, data);
+        return res.data;
+    },
+    getStagesBoard: async () => {
+        const res = await apiClient.get('/stages/board');
+        return res.data;
+    },
+    getStagesStats: async (params?: { from?: string; to?: string }) => {
+        let url = '/stages/stats';
+        if (params?.from || params?.to) {
+            const searchParams = new URLSearchParams();
+            if (params.from) searchParams.append('from', params.from);
+            if (params.to) searchParams.append('to', params.to);
+            url += `?${searchParams.toString()}`;
+        }
+        const res = await apiClient.get(url);
+        return res.data;
+    },
+    assignStageWorker: async (id: number, data: { workerId: number | null }) => {
+        const res = await apiClient.put(`/stages/${id}/assign`, data);
+        return res.data;
     }
 };

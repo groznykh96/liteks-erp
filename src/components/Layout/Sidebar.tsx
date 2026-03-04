@@ -16,7 +16,7 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
 
     if (!user) return null;
 
-    const isWorker = user.role === 'WORKER';
+    const isWorker = ['WORKER', 'TRIMMER', 'POURER', 'MOULDER', 'KNOCKER', 'FINISHER'].includes(user.role);
     const isOtk = user.role === 'OTK' || user.role === 'OTC';
     const isAdmin = user.role === 'ADMIN';
     const isDirector = user.role === 'DIRECTOR';
@@ -81,10 +81,22 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
                                         </NavLink>
                                     )}
                                     {(isWorker || isMaster || isAdmin) && (
-                                        <NavLink to="/worker" className={navLinkClasses} title={user?.department ? `Мои Задачи (${user.department})` : 'Мои Задачи'}>
+                                        <NavLink to="/worker" className={navLinkClasses} title={user?.department ? `Мои Задачи / Этапы (${user.department})` : 'Мои Задачи / Этапы'}>
                                             <Activity size={20} className="shrink-0" />
-                                            <span className={`transition-opacity duration-200 ${isOpen ? 'opacity-100' : 'lg:hidden'}`}>Мои Задачи</span>
+                                            <span className={`transition-opacity duration-200 ${isOpen ? 'opacity-100' : 'lg:hidden'}`}>Мои Задачи / Этапы</span>
                                         </NavLink>
+                                    )}
+                                    {(isMaster || isDirector || isAdmin) && (
+                                        <>
+                                            <NavLink to="/production-board" className={navLinkClasses} title="Доска производства">
+                                                <LayoutGrid size={20} className="shrink-0" />
+                                                <span className={`transition-opacity duration-200 ${isOpen ? 'opacity-100' : 'lg:hidden'}`}>Доска производства</span>
+                                            </NavLink>
+                                            <NavLink to="/production-stats" className={navLinkClasses} title="Статистика цеха">
+                                                <PieChart size={20} className="shrink-0" />
+                                                <span className={`transition-opacity duration-200 ${isOpen ? 'opacity-100' : 'lg:hidden'}`}>Статистика производства</span>
+                                            </NavLink>
+                                        </>
                                     )}
                                     {(isOtk || isAdmin || isMaster || isDirector) && (
                                         <NavLink to="/otc" className={navLinkClasses} title="ОТК">

@@ -108,6 +108,40 @@ router.post('/', async (req: Request, res: Response) => {
             });
         }
 
+        // PRODUCTION STAGE: close QC stage and activate WAREHOUSE
+        if (accepted > 0) {
+            const qcStage = await prisma.productionStage.findFirst({
+                where: { batchId: batch.id, stage: 'QC', status: { in: ['PENDING', 'IN_PROGRESS'] } }
+            });
+            if (qcStage) {
+                await prisma.productionStage.update({
+                    where: { id: qcStage.id },
+                    data: {
+                        status: 'DONE',
+                        workerId: inspectorId,
+                        completedAt: new Date(),
+                        qtyIn: qcStage.qtyIn,
+                        qtyOut: accepted,
+                        qtyRejected: parseInt(rejectedQty),
+                    }
+                });
+            }
+            // Activate WAREHOUSE stage
+            const warehouseStage = await prisma.productionStage.findFirst({
+                where: { batchId: batch.id, stage: 'WAREHOUSE', status: 'PENDING' }
+            });
+            if (warehouseStage) {
+                await prisma.productionStage.update({
+                    where: { id: warehouseStage.id },
+                    data: { qtyIn: accepted, status: 'IN_PROGRESS' }
+                });
+                await prisma.batch.update({
+                    where: { id: batch.id },
+                    data: { currentStage: 'WAREHOUSE' }
+                });
+            }
+        }
+
         res.status(201).json(report);
     } catch (e) {
         console.error('Error creating QC report:', e);

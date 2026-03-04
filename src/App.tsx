@@ -24,6 +24,8 @@ import TrainingAdmin from './pages/Training/TrainingAdmin';
 import CompetencyMatrix from './pages/Training/CompetencyMatrix';
 import TMCDashboard from './pages/Warehouse/TMCDashboard';
 import StorekeeperDashboard from './pages/Warehouse/StorekeeperDashboard';
+import ProductionBoard from './pages/ProductionBoard';
+import ProductionStats from './pages/ProductionStats';
 import './App.css';
 
 function HeaderTitle() {
@@ -47,6 +49,8 @@ function HeaderTitle() {
   else if (path.startsWith('/master-orders')) title = 'Производственные заказы';
   else if (path.startsWith('/tmc')) title = 'ТМЦ и Склад';
   else if (path.startsWith('/storekeeper')) title = 'Складская Логистика';
+  else if (path.startsWith('/production-board')) title = 'Доска производства';
+  else if (path.startsWith('/production-stats')) title = 'Статистика производства';
 
   return (
     <div className="flex items-center gap-2">
@@ -77,6 +81,11 @@ function HomeRedirect() {
     case 'TRAINER': return <Navigate to="/admin/training" replace />;
     case 'TMC': return <Navigate to="/tmc" replace />;
     case 'STOREKEEPER': return <Navigate to="/storekeeper" replace />;
+    case 'TRIMMER':
+    case 'POURER':
+    case 'MOULDER':
+    case 'KNOCKER':
+    case 'FINISHER': return <Navigate to="/worker" replace />;
     default: return <Navigate to="/calculator" replace />;
   }
 }
@@ -173,6 +182,8 @@ function MainLayout() {
               <Route path="/my-director-tasks" element={<ProtectedRoute><MyDirectorTasks /></ProtectedRoute>} />
               <Route path="/sales" element={<ProtectedRoute><SalesDashboard /></ProtectedRoute>} />
               <Route path="/master-orders" element={<ProtectedRoute><MasterOrders /></ProtectedRoute>} />
+              <Route path="/production-board" element={<RoleRoute roles={['MASTER', 'ADMIN', 'DIRECTOR']}><ProductionBoard /></RoleRoute>} />
+              <Route path="/production-stats" element={<RoleRoute roles={['MASTER', 'ADMIN', 'DIRECTOR']}><ProductionStats /></RoleRoute>} />
 
               {/* Training and Instructions Modules */}
               <Route path="/training" element={<ProtectedRoute><MyTraining /></ProtectedRoute>} />

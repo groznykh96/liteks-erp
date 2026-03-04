@@ -52,6 +52,9 @@ model User {
   warehouseTransactions WarehouseTransaction[]
   shippingOrdersCreated ShippingOrder[] @relation("ShippingOrderCreator")
   shippingOrdersShipped ShippingOrder[] @relation("ShippingOrderShipper")
+
+  // Production stage tracking
+  productionStages ProductionStage[] @relation("StageWorker")
 }
 
 model Team {
@@ -290,15 +293,40 @@ model Batch {
   pouringTemp Float? // Pouring temperature
   moldTemp    Float? // Mold or die temperature
 
+  // Production stage tracking
+  currentStage String? @default("CASTING") // Current active stage: CASTING | FORMING | POURING | KNOCKINGOUT | TRIMMING | FINISHING | QC | WAREHOUSE
+  route        String? @default("KOKIL")   // Route: KOKIL | MLPD | HTS
+
   createdAt DateTime @default(now())
 
   task      Task       @relation(fields: [taskId], references: [id], onDelete: Cascade)
   worker    User       @relation(fields: [workerId], references: [id])
   qcReports QCReport[]
-  
+
   warehouseItems  WarehouseItem[]
   warehouseLogs   WarehouseTransaction[]
   shippingItems   ShippingOrderItem[]
+  stages          ProductionStage[]
+}
+
+// -----------------------------------------
+// 4b. Production Stage Tracking (Производственный цикл)
+// -----------------------------------------
+model ProductionStage {
+  id          Int       @id @default(autoincrement())
+  batchId     Int
+  stage       String    // CASTING | FORMING | POURING | KNOCKINGOUT | TRIMMING | FINISHING | QC | WAREHOUSE
+  status      String    @default("PENDING") // PENDING | IN_PROGRESS | DONE
+  workerId    Int?
+  startedAt   DateTime?
+  completedAt DateTime?
+  qtyIn       Int?      // Qty received at this stage
+  qtyOut      Int?      // Qty passed to next stage (good parts)
+  qtyRejected Int?      // Qty rejected at this stage
+  note        String?
+
+  batch  Batch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  worker User? @relation("StageWorker", fields: [workerId], references: [id])
 }
 
 // -----------------------------------------

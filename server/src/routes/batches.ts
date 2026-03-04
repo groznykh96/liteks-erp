@@ -5,6 +5,12 @@ import prisma from '../db';
 const router = Router();
 router.use(authenticateToken);
 
+const STAGE_ROUTES: Record<string, string[]> = {
+    KOKIL: ['CASTING', 'TRIMMING', 'QC', 'WAREHOUSE'],
+    MLPD: ['CASTING', 'TRIMMING', 'QC', 'WAREHOUSE'],
+    HTS: ['FORMING', 'POURING', 'KNOCKINGOUT', 'TRIMMING', 'FINISHING', 'QC', 'WAREHOUSE'],
+};
+
 // Get Batches
 router.get('/', async (req: Request, res: Response) => {
     try {
@@ -14,19 +20,18 @@ router.get('/', async (req: Request, res: Response) => {
         if (taskId) where.taskId = parseInt(taskId as string);
         if (workerId) where.workerId = parseInt(workerId as string);
 
-        const batches = await prisma.batch.findMany({
+        const batches = await (prisma as any).batch.findMany({
             where,
             include: {
                 task: {
-                    include: {
-                        nomenclature: true,
-                        method: true
-                    }
+                    include: { nomenclature: true, method: true }
                 },
-                worker: {
-                    select: { id: true, fullName: true, department: true }
-                },
-                qcReports: { include: { photos: true } }
+                worker: { select: { id: true, fullName: true, department: true } },
+                qcReports: { include: { photos: true } },
+                stages: {
+                    include: { worker: { select: { id: true, fullName: true } } },
+                    orderBy: { id: 'asc' }
+                }
             },
             orderBy: { createdAt: 'desc' }
         });
@@ -40,39 +45,48 @@ router.get('/', async (req: Request, res: Response) => {
 // Create Batch
 router.post('/', async (req: Request, res: Response) => {
     try {
-        const { batchNumber, taskId, completedQuantity, meltsCount, pouringTemp, moldTemp } = req.body;
+        const { batchNumber, taskId, completedQuantity, meltsCount, pouringTemp, moldTemp, route } = req.body;
         const workerId = (req as any).user?.id;
 
         if (!batchNumber || !taskId || !completedQuantity) {
             return res.status(400).json({ error: 'Missing required fields' });
         }
 
-        // Check for unique batch number
-        const existingBatch = await prisma.batch.findUnique({
-            where: { batchNumber }
-        });
-
+        const existingBatch = await prisma.batch.findUnique({ where: { batchNumber } });
         if (existingBatch) {
             return res.status(409).json({ error: 'Партия с таким номером уже существует.' });
         }
 
-        const batch = await prisma.batch.create({
+        const batchRoute = route || 'KOKIL';
+        const stageChain = STAGE_ROUTES[batchRoute] || STAGE_ROUTES['KOKIL'];
+        const firstStage = stageChain[0];
+        const qty = parseInt(completedQuantity);
+
+        const batch = await (prisma as any).batch.create({
             data: {
                 batchNumber,
                 taskId: parseInt(taskId),
-                completedQuantity: parseInt(completedQuantity),
+                completedQuantity: qty,
                 meltsCount: meltsCount ? parseInt(meltsCount) : 1,
                 pouringTemp: pouringTemp ? parseFloat(pouringTemp) : null,
                 moldTemp: moldTemp ? parseFloat(moldTemp) : null,
-                workerId: workerId
+                workerId: workerId,
+                route: batchRoute,
+                currentStage: firstStage,
+                stages: {
+                    create: stageChain.map((stage: string, i: number) => ({
+                        stage,
+                        status: 'PENDING',
+                        workerId: i === 0 ? workerId : null,
+                        qtyIn: i === 0 ? qty : null,
+                    })),
+                },
             },
             include: {
-                task: { include: { nomenclature: true } }
+                task: { include: { nomenclature: true } },
+                stages: true,
             }
         });
-
-        // Optionally, update the task status here if quantity is met
-        // Example: if task.quantity <= sum(all batch.completedQuantity), status = 'DONE'
 
         res.status(201).json(batch);
     } catch (e) {
@@ -81,7 +95,7 @@ router.post('/', async (req: Request, res: Response) => {
     }
 });
 
-// Delete Batch (Optional based on business logic)
+// Delete Batch
 router.delete('/:id', async (req: Request, res: Response) => {
     try {
         await prisma.batch.delete({ where: { id: parseInt(req.params.id as string) } });

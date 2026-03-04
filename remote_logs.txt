@@ -1,0 +1,10 @@
+backend-1  | Loaded Prisma config from prisma.config.ts.
+backend-1  | 
+backend-1  | Prisma schema loaded from prisma/schema.prisma.
+backend-1  | Datasource "db": PostgreSQL database "liteks_db", schema "public" at "db:5432"
+backend-1  | 
+backend-1  | 🚀  Your database is now in sync with your Prisma schema. Done in 449ms
+backend-1  | 
+backend-1  | [dotenv@17.3.1] injecting env (0) from .env -- tip: 🛠️  run anywhere with `dotenvx run -- yourcommand`
+backend-1  | [dotenv@17.3.1] injecting env (0) from .env -- tip: ⚙️  enable debug logging with { debug: true }
+backend-1  | Backend server started on http://localhost:4000

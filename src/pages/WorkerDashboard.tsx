@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { api } from '../api';
 import { useAuth } from '../contexts/AuthContext';
-import { Hammer, CheckCircle, Package, ArrowRight } from 'lucide-react';
+import { Hammer, CheckCircle, Package, ArrowRight, Play, CheckSquare } from 'lucide-react';
 
 interface Nomenclature { code: string; name: string; }
 interface CastingMethod { name: string; }
@@ -35,10 +35,28 @@ interface Task {
     notes?: string;
 }
 
+interface Stage {
+    id: number;
+    stage: string;
+    stageLabel: string;
+    status: 'PENDING' | 'IN_PROGRESS' | 'DONE';
+    qtyIn: number | null;
+    batch: {
+        batchNumber: string;
+        task: {
+            taskNumber: string;
+            nomenclature: Nomenclature;
+            method: CastingMethod;
+        }
+    };
+    nextStageLabel: string | null;
+}
+
 export default function WorkerDashboard() {
     const { user } = useAuth();
     const [tasks, setTasks] = useState<Task[]>([]);
     const [batches, setBatches] = useState<Batch[]>([]);
+    const [stages, setStages] = useState<Stage[]>([]);
     const [loading, setLoading] = useState(true);
 
     // Batch Reporting State
@@ -53,12 +71,14 @@ export default function WorkerDashboard() {
         if (!user) return;
         setLoading(true);
         try {
-            const [tasksData, batchesData] = await Promise.all([
+            const [tasksData, batchesData, stagesData] = await Promise.all([
                 api.getTasks({ assignedToUserId: user.id }),
-                api.getBatches({ workerId: user.id })
+                api.getBatches({ workerId: user.id }),
+                api.getMyStages()
             ]);
             setTasks(tasksData);
             setBatches(batchesData);
+            setStages(stagesData);
         } catch (e) {
             console.error(e);
         } finally {
@@ -112,6 +132,42 @@ export default function WorkerDashboard() {
         }
     };
 
+    // Stage Tracking State
+    const [stageReportModal, setStageReportModal] = useState<{ isOpen: boolean; stage: Stage | null }>({ isOpen: false, stage: null });
+    const [stageQtyOut, setStageQtyOut] = useState('');
+    const [stageQtyRejected, setStageQtyRejected] = useState('0');
+    const [stageNote, setStageNote] = useState('');
+
+    const handleStartStage = async (stageId: number) => {
+        try {
+            await api.startStage(stageId);
+            loadData();
+        } catch (e) {
+            alert('Ошибка при начале этапа');
+        }
+    };
+
+    const handleCompleteStageSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!stageReportModal.stage) return;
+
+        try {
+            await api.completeStage(stageReportModal.stage.id, {
+                qtyOut: Number(stageQtyOut),
+                qtyRejected: Number(stageQtyRejected),
+                note: stageNote
+            });
+            setStageReportModal({ isOpen: false, stage: null });
+            setStageQtyOut('');
+            setStageQtyRejected('0');
+            setStageNote('');
+            loadData();
+            alert('Этап успешно завершен');
+        } catch (e) {
+            alert('Ошибка при завершении этапа');
+        }
+    };
+
     if (!user) return null;
 
     return (
@@ -133,7 +189,67 @@ export default function WorkerDashboard() {
                 </div>
             )}
 
-            <h3 className="text-xl font-bold mt-8 border-b border-neutral-700 pb-2">Сменное задание</h3>
+            {/* ПРОИЗВОДСТВЕННЫЕ ЭТАПЫ (НОВОЕ) */}
+            <h3 className="text-xl font-bold mt-8 border-b border-neutral-700 pb-2 text-blue-400">Мои производственные этапы</h3>
+
+            {loading ? (
+                <div className="text-neutral-400 animate-pulse">Загрузка этапов...</div>
+            ) : stages.length === 0 ? (
+                <div className="bg-neutral-800 p-8 rounded-xl border border-neutral-700 text-center shadow-lg">
+                    <p className="text-neutral-400 text-lg">Нет активных этапов производства</p>
+                </div>
+            ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {stages.map(s => (
+                        <div key={s.id} className={`p-5 rounded-xl border shadow-lg transition-all ${s.status === 'IN_PROGRESS' ? 'bg-blue-900/20 border-blue-800/50 outline outline-1 outline-blue-500/50' : 'bg-neutral-800 border-neutral-700'
+                            }`}>
+                            <div className="flex justify-between items-start mb-4 border-b border-neutral-700/50 pb-3">
+                                <div>
+                                    <div className="font-mono text-sm font-bold text-neutral-300">Партия: {s.batch.batchNumber}</div>
+                                    <div className="text-xs text-blue-400 font-bold uppercase tracking-wider mt-1">{s.stageLabel}</div>
+                                </div>
+                                <div className={`px-2 py-1 rounded text-xs font-bold uppercase tracking-wide border
+                                    ${s.status === 'IN_PROGRESS' ? 'bg-blue-900/50 text-blue-400 border-blue-700' : 'bg-neutral-900 text-neutral-300 border-neutral-600'}`}>
+                                    {s.status === 'IN_PROGRESS' ? 'В Работе' : 'Ожидает'}
+                                </div>
+                            </div>
+
+                            <div className="mb-6 space-y-2">
+                                <div className="flex items-center gap-2 font-bold text-lg">
+                                    <Package size={18} className="text-yellow-500" /> {s.batch.task.nomenclature.code}
+                                </div>
+                                <div className="text-sm text-neutral-400">{s.batch.task.nomenclature.name}</div>
+                                <div className="flex items-center justify-between mt-3 pt-3 border-t border-neutral-700/50">
+                                    <div className="inline-block px-2 py-1 rounded text-xs font-bold bg-neutral-900 text-neutral-400 border border-neutral-700/50">
+                                        Входное кол-во:
+                                    </div>
+                                    <div className="font-mono font-bold text-xl text-white">
+                                        {s.qtyIn ?? '-'} <span className="text-sm font-normal text-neutral-500 font-sans">шт</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="flex gap-3 mt-4">
+                                {s.status === 'PENDING' && (
+                                    <button onClick={() => handleStartStage(s.id)} className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2.5 rounded transition-colors text-sm shadow-md flex items-center justify-center gap-2">
+                                        <Play size={16} /> Начать работу
+                                    </button>
+                                )}
+                                {s.status === 'IN_PROGRESS' && (
+                                    <button onClick={() => {
+                                        setStageReportModal({ isOpen: true, stage: s });
+                                        setStageQtyOut(s.qtyIn ? s.qtyIn.toString() : '');
+                                    }} className="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-2.5 rounded transition-colors text-sm shadow-md flex items-center justify-center gap-2">
+                                        <CheckSquare size={16} /> Завершить этап
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
+
+            <h3 className="text-xl font-bold mt-8 border-b border-neutral-700 pb-2">Создание партии (Устаревшее/Первый этап)</h3>
 
             {loading ? (
                 <div className="text-neutral-400 animate-pulse">Загрузка задач...</div>
@@ -318,6 +434,51 @@ export default function WorkerDashboard() {
                             <div className="flex gap-4 mt-6">
                                 <button type="button" onClick={() => setReportTaskId(null)} className="flex-1 bg-neutral-700 hover:bg-neutral-600 text-white font-bold py-2 rounded transition-colors">Отмена</button>
                                 <button type="submit" className="flex-1 bg-green-600 hover:bg-green-500 text-white font-bold py-2 rounded transition-colors shadow-md">Сдать партию</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* МOДАЛКА ЗАВЕРШЕНИЯ ЭТАПА */}
+            {stageReportModal.isOpen && stageReportModal.stage && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                    <div className="bg-neutral-800 border border-neutral-700 rounded-xl p-6 shadow-2xl max-w-sm w-full">
+                        <h3 className="text-xl font-bold mb-1 flex items-center gap-2 text-green-400">
+                            <CheckSquare /> Отчет по этапу
+                        </h3>
+                        <p className="text-sm text-neutral-400 mb-4 border-b border-neutral-700 pb-2">
+                            {stageReportModal.stage.stageLabel} (Партия: {stageReportModal.stage.batch.batchNumber})
+                        </p>
+
+                        <form onSubmit={handleCompleteStageSubmit} className="space-y-4 text-sm">
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-neutral-400 mb-1 font-semibold uppercase text-xs tracking-wider">Годные, шт</label>
+                                    <input type="number" min="0" max={stageReportModal.stage.qtyIn ?? undefined} value={stageQtyOut} onChange={e => setStageQtyOut(e.target.value)} required
+                                        className="w-full bg-neutral-900 border border-neutral-700 rounded p-2 text-green-400 font-bold outline-none focus:border-green-500 transition-colors font-mono text-lg" />
+                                </div>
+                                <div>
+                                    <label className="block text-neutral-400 mb-1 font-semibold uppercase text-xs tracking-wider">Брак, шт</label>
+                                    <input type="number" min="0" value={stageQtyRejected} onChange={e => setStageQtyRejected(e.target.value)} required
+                                        className="w-full bg-neutral-900 border border-neutral-700 rounded p-2 text-red-400 font-bold outline-none focus:border-red-500 transition-colors font-mono text-lg" />
+                                </div>
+                            </div>
+
+                            {stageReportModal.stage.nextStageLabel && (
+                                <div className="text-xs text-blue-400 bg-blue-900/20 p-2 rounded border border-blue-900/50 mt-2">
+                                    Следующий этап: <strong>{stageReportModal.stage.nextStageLabel}</strong> (детали будут переданы туда)
+                                </div>
+                            )}
+
+                            <div>
+                                <label className="block text-neutral-400 mb-1 font-semibold uppercase text-xs tracking-wider">Комментарий / Причина брака</label>
+                                <input type="text" value={stageNote} onChange={e => setStageNote(e.target.value)} placeholder="Опционально..."
+                                    className="w-full bg-neutral-900 border border-neutral-700 rounded p-2 text-white outline-none focus:border-blue-500 transition-colors" />
+                            </div>
+                            <div className="flex gap-4 mt-6">
+                                <button type="button" onClick={() => setStageReportModal({ isOpen: false, stage: null })} className="flex-1 bg-neutral-700 hover:bg-neutral-600 text-white font-bold py-2 rounded transition-colors">Отмена</button>
+                                <button type="submit" className="flex-1 bg-green-600 hover:bg-green-500 text-white font-bold py-2 rounded transition-colors shadow-md">Завершить</button>
                             </div>
                         </form>
                     </div>

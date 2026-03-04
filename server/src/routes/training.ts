@@ -31,17 +31,35 @@ router.get('/', authenticateToken, async (req: any, res) => {
     }
 });
 
-// Create new training material and assign to departments / specific users
+// Create new training material and assign to departments / specific users / roles
 router.post('/', authenticateToken, async (req: any, res) => {
     if (!hasRole(req, ['ADMIN', 'DIRECTOR'])) {
         return res.status(403).json({ error: 'Доступ запрещён' });
     }
     try {
-        const { title, description, fileUrl, departments, userIds } = req.body;
+        const { title, description, fileUrl, departments, roles, userIds } = req.body;
 
         if (!title || !fileUrl) {
             return res.status(400).json({ error: 'Title and File URL are required' });
         }
+
+        const ROLE_LABELS: Record<string, string> = {
+            'WORKER': 'Рабочий',
+            'MASTER': 'Мастер',
+            'TECHNOLOGIST': 'Технолог',
+            'OTC': 'ОТК',
+            'DIRECTOR': 'Директор',
+            'ADMIN': 'Администратор',
+            'SALES': 'Менеджер по продажам'
+        };
+
+        // Combine labels for display. If I have roles like "MASTER", we can format them?
+        // Let's just store the arrays. We will store a combined array string.
+        const combinedLabels: string[] = [];
+        if (roles && Array.isArray(roles)) {
+            roles.forEach((r: string) => combinedLabels.push(ROLE_LABELS[r] || r));
+        }
+        if (departments && Array.isArray(departments)) combinedLabels.push(...departments);
 
         // 1. Create the material
         const material = await prisma.trainingMaterial.create({
@@ -49,7 +67,7 @@ router.post('/', authenticateToken, async (req: any, res) => {
                 title,
                 description: description || null,
                 fileUrl,
-                departments: departments && departments.length > 0 ? JSON.stringify(departments) : null,
+                departments: combinedLabels.length > 0 ? JSON.stringify(combinedLabels) : null,
             }
         });
 
@@ -71,6 +89,18 @@ router.post('/', authenticateToken, async (req: any, res) => {
                 select: { id: true }
             });
             deptUsers.forEach(u => usersToAssign.add(u.id));
+        }
+
+        // Add all users from selected roles
+        if (roles && Array.isArray(roles) && roles.length > 0) {
+            const roleUsers = await prisma.user.findMany({
+                where: {
+                    role: { in: roles },
+                    isActive: true
+                },
+                select: { id: true }
+            });
+            roleUsers.forEach(u => usersToAssign.add(u.id));
         }
 
         // 3. Create assignments (skip duplicates)

@@ -39,8 +39,15 @@ const DEPARTMENTS = [
     'Инженерно-технологический отдел'
 ];
 
-// Assignment mode: by department or by specific users
-type AssignMode = 'department' | 'users';
+const ROLES = [
+    { value: 'WORKER', label: 'Рабочий' },
+    { value: 'MASTER', label: 'Мастер' },
+    { value: 'TECHNOLOGIST', label: 'Технолог' },
+    { value: 'OTC', label: 'ОТК' },
+    { value: 'DIRECTOR', label: 'Директор' },
+    { value: 'ADMIN', label: 'Администратор' },
+    { value: 'SALES', label: 'Менеджер по продажам' }
+];
 
 export default function TrainingAdmin() {
     const { user } = useAuth();
@@ -54,7 +61,7 @@ export default function TrainingAdmin() {
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
     const [fileUrl, setFileUrl] = useState('');
-    const [assignMode, setAssignMode] = useState<AssignMode>('department');
+    const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
     const [selectedDeps, setSelectedDeps] = useState<string[]>([]);
     const [selectedUsers, setSelectedUsers] = useState<number[]>([]);
     const [employeeSearch, setEmployeeSearch] = useState('');
@@ -81,25 +88,24 @@ export default function TrainingAdmin() {
         d.includes(dep) ? d.filter(x => x !== dep) : [...d, dep]
     );
 
+    const toggleRole = (role: string) => setSelectedRoles(r =>
+        r.includes(role) ? r.filter(x => x !== role) : [...r, role]
+    );
+
     const toggleUser = (id: number) => setSelectedUsers(u =>
         u.includes(id) ? u.filter(x => x !== id) : [...u, id]
     );
 
     const resetForm = () => {
         setTitle(''); setDescription(''); setFileUrl('');
-        setSelectedDeps([]); setSelectedUsers([]); setEmployeeSearch('');
-        setAssignMode('department');
+        setSelectedDeps([]); setSelectedUsers([]); setSelectedRoles([]); setEmployeeSearch('');
     };
 
     const handleCreate = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        if (assignMode === 'department' && selectedDeps.length === 0) {
-            alert('Выберите хотя бы один отдел или переключитесь на режим выбора сотрудников.');
-            return;
-        }
-        if (assignMode === 'users' && selectedUsers.length === 0) {
-            alert('Выберите хотя бы одного сотрудника.');
+        if (selectedRoles.length === 0 && selectedDeps.length === 0 && selectedUsers.length === 0) {
+            alert('Выберите хотя бы одну роль, отдел или конкретного сотрудника.');
             return;
         }
 
@@ -108,8 +114,9 @@ export default function TrainingAdmin() {
                 title,
                 description,
                 fileUrl,
-                departments: assignMode === 'department' ? selectedDeps : [],
-                userIds: assignMode === 'users' ? selectedUsers : [],
+                roles: selectedRoles,
+                departments: selectedDeps,
+                userIds: selectedUsers,
             });
             setShowCreate(false);
             resetForm();
@@ -281,84 +288,95 @@ export default function TrainingAdmin() {
                             {/* Assignment mode toggle */}
                             <div>
                                 <label className="block text-xs font-semibold text-neutral-400 uppercase mb-2">Кому назначить *</label>
-                                <div className="flex gap-2 mb-3">
-                                    <button
-                                        type="button"
-                                        onClick={() => setAssignMode('department')}
-                                        className={`px-4 py-1.5 rounded text-sm font-bold transition-colors ${assignMode === 'department' ? 'bg-orange-600 text-white' : 'bg-neutral-700 text-neutral-300 hover:bg-neutral-600'}`}
-                                    >
-                                        По отделу
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => setAssignMode('users')}
-                                        className={`px-4 py-1.5 rounded text-sm font-bold transition-colors ${assignMode === 'users' ? 'bg-orange-600 text-white' : 'bg-neutral-700 text-neutral-300 hover:bg-neutral-600'}`}
-                                    >
-                                        Конкретные сотрудники
-                                    </button>
+                                <div className="text-sm text-neutral-500 mb-4">
+                                    Вы можете выбрать любое сочетание ролей, отделов и конкретных сотрудников.
                                 </div>
 
-                                {assignMode === 'department' && (
-                                    <div className="grid grid-cols-2 gap-2 text-sm max-h-48 overflow-y-auto pr-1">
-                                        {DEPARTMENTS.map(d => (
-                                            <label key={d} className="flex items-center gap-2 text-neutral-300 cursor-pointer p-2 rounded hover:bg-neutral-700 transition-colors">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={selectedDeps.includes(d)}
-                                                    onChange={() => toggleDep(d)}
-                                                    className="rounded"
-                                                />
-                                                {d}
-                                            </label>
-                                        ))}
-                                    </div>
-                                )}
-
-                                {assignMode === 'users' && (
-                                    <div>
-                                        <input
-                                            type="text"
-                                            placeholder="Поиск по имени или отделу..."
-                                            value={employeeSearch}
-                                            onChange={e => setEmployeeSearch(e.target.value)}
-                                            className="w-full bg-neutral-900 border border-neutral-700 rounded p-2 text-white mb-2 outline-none focus:border-orange-500 text-sm"
-                                        />
-                                        <div className="max-h-56 overflow-y-auto border border-neutral-700 rounded bg-neutral-900">
-                                            {Object.entries(
-                                                filteredEmployees.reduce((acc: Record<string, Employee[]>, emp) => {
-                                                    const dep = emp.department || 'Без отдела';
-                                                    if (!acc[dep]) acc[dep] = [];
-                                                    acc[dep].push(emp);
-                                                    return acc;
-                                                }, {})
-                                            ).map(([dept, emps]) => (
-                                                <div key={dept}>
-                                                    <div className="px-3 py-1.5 text-xs font-bold text-neutral-500 uppercase bg-neutral-800 sticky top-0">{dept}</div>
-                                                    {emps.map(emp => (
-                                                        <label key={emp.id} className="flex items-center gap-3 px-3 py-2 hover:bg-neutral-800 cursor-pointer transition-colors">
-                                                            <input
-                                                                type="checkbox"
-                                                                checked={selectedUsers.includes(emp.id)}
-                                                                onChange={() => toggleUser(emp.id)}
-                                                                className="rounded"
-                                                            />
-                                                            <span className="text-sm text-white">{emp.fullName}</span>
-                                                            <span className="text-xs text-neutral-500 ml-auto">{emp.role}</span>
-                                                        </label>
-                                                    ))}
-                                                </div>
+                                <div className="space-y-4">
+                                    {/* Roles */}
+                                    <div className="bg-neutral-900 border border-neutral-800 rounded p-3">
+                                        <div className="text-sm font-bold text-white mb-2">По ролям:</div>
+                                        <div className="flex flex-wrap gap-2 text-sm">
+                                            {ROLES.map(r => (
+                                                <label key={r.value} className="flex items-center gap-2 text-neutral-300 cursor-pointer p-1.5 px-2 rounded hover:bg-neutral-700 transition-colors bg-neutral-800">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={selectedRoles.includes(r.value)}
+                                                        onChange={() => toggleRole(r.value)}
+                                                        className="rounded"
+                                                    />
+                                                    {r.label}
+                                                </label>
                                             ))}
-                                            {filteredEmployees.length === 0 && (
-                                                <div className="p-4 text-center text-neutral-500 text-sm">Сотрудники не найдены</div>
+                                        </div>
+                                    </div>
+
+                                    {/* Departments */}
+                                    <div className="bg-neutral-900 border border-neutral-800 rounded p-3">
+                                        <div className="text-sm font-bold text-white mb-2">По отделам:</div>
+                                        <div className="flex flex-wrap gap-2 text-sm max-h-48 overflow-y-auto pr-1">
+                                            {DEPARTMENTS.map(d => (
+                                                <label key={d} className="flex items-center gap-2 text-neutral-300 cursor-pointer p-1.5 px-2 rounded hover:bg-neutral-700 transition-colors bg-neutral-800">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={selectedDeps.includes(d)}
+                                                        onChange={() => toggleDep(d)}
+                                                        className="rounded"
+                                                    />
+                                                    {d}
+                                                </label>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* Specific Users */}
+                                    <div className="bg-neutral-900 border border-neutral-800 rounded p-3">
+                                        <div className="text-sm font-bold text-white mb-2">Конкретным сотрудникам:</div>
+                                        <div>
+                                            <input
+                                                type="text"
+                                                placeholder="Поиск по имени или отделу..."
+                                                value={employeeSearch}
+                                                onChange={e => setEmployeeSearch(e.target.value)}
+                                                className="w-full bg-neutral-800 border border-neutral-700 rounded p-2 text-white mb-2 outline-none focus:border-orange-500 text-sm"
+                                            />
+                                            <div className="max-h-48 overflow-y-auto border border-neutral-700 rounded bg-neutral-800">
+                                                {Object.entries(
+                                                    filteredEmployees.reduce((acc: Record<string, Employee[]>, emp) => {
+                                                        const dep = emp.department || 'Без отдела';
+                                                        if (!acc[dep]) acc[dep] = [];
+                                                        acc[dep].push(emp);
+                                                        return acc;
+                                                    }, {})
+                                                ).map(([dept, emps]) => (
+                                                    <div key={dept}>
+                                                        <div className="px-3 py-1.5 text-xs font-bold text-neutral-500 uppercase bg-neutral-900 sticky top-0">{dept}</div>
+                                                        {emps.map(emp => (
+                                                            <label key={emp.id} className="flex items-center gap-3 px-3 py-2 hover:bg-neutral-700 cursor-pointer transition-colors border-b border-neutral-800/50 last:border-0">
+                                                                <input
+                                                                    type="checkbox"
+                                                                    checked={selectedUsers.includes(emp.id)}
+                                                                    onChange={() => toggleUser(emp.id)}
+                                                                    className="rounded"
+                                                                />
+                                                                <span className="text-sm text-white">{emp.fullName}</span>
+                                                                <span className="text-xs text-neutral-500 ml-auto">{emp.role}</span>
+                                                            </label>
+                                                        ))}
+                                                    </div>
+                                                ))}
+                                                {filteredEmployees.length === 0 && (
+                                                    <div className="p-4 text-center text-neutral-500 text-sm">Сотрудники не найдены</div>
+                                                )}
+                                            </div>
+                                            {selectedUsers.length > 0 && (
+                                                <div className="mt-2 text-sm text-orange-400 font-semibold">
+                                                    Выбрано: {selectedUsers.length} персонально
+                                                </div>
                                             )}
                                         </div>
-                                        {selectedUsers.length > 0 && (
-                                            <div className="mt-2 text-sm text-orange-400 font-semibold">
-                                                Выбрано: {selectedUsers.length} сотрудников
-                                            </div>
-                                        )}
                                     </div>
-                                )}
+                                </div>
                             </div>
 
                             <div className="flex gap-3 pt-4 border-t border-neutral-700">

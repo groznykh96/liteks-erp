@@ -17,7 +17,7 @@ model User {
   fullName     String
   login        String   @unique
   passwordHash String
-  role         String // 'ADMIN', 'DIRECTOR', 'MASTER', 'TECHNOLOGIST', 'OTC', 'WORKER', 'TRAINER'
+  role         String // 'ADMIN', 'DIRECTOR', 'MASTER', 'TECHNOLOGIST', 'OTC', 'WORKER', 'TRAINER', 'TMC', 'STOREKEEPER'
   department   String?
   isActive     Boolean  @default(true)
   createdAt    DateTime @default(now())
@@ -47,6 +47,11 @@ model User {
 
   // Training System
   trainingAssignments TrainingAssignment[]
+
+  // Warehouse/TMC System
+  warehouseTransactions WarehouseTransaction[]
+  shippingOrdersCreated ShippingOrder[] @relation("ShippingOrderCreator")
+  shippingOrdersShipped ShippingOrder[] @relation("ShippingOrderShipper")
 }
 
 model Team {
@@ -145,6 +150,9 @@ model Nomenclature {
   tasks           Task[]
   defects         Defect[]
   productionPlans ProductionPlanItem[]
+  warehouseItems  WarehouseItem[]
+  warehouseLogs   WarehouseTransaction[]
+  shippingItems   ShippingOrderItem[]
 }
 
 model CastingMethod {
@@ -287,6 +295,10 @@ model Batch {
   task      Task       @relation(fields: [taskId], references: [id], onDelete: Cascade)
   worker    User       @relation(fields: [workerId], references: [id])
   qcReports QCReport[]
+  
+  warehouseItems  WarehouseItem[]
+  warehouseLogs   WarehouseTransaction[]
+  shippingItems   ShippingOrderItem[]
 }
 
 // -----------------------------------------
@@ -406,6 +418,7 @@ model Order {
   items    OrderItem[]
   stages   OrderStage[]
   comments OrderComment[]
+  shippingOrders ShippingOrder[]
 }
 
 model OrderItem {
@@ -482,4 +495,69 @@ model TrainingAssignment {
   material TrainingMaterial @relation(fields: [materialId], references: [id], onDelete: Cascade)
 
   @@unique([userId, materialId])
+}
+
+// -----------------------------------------
+// 9. Warehouse & TMC System
+// -----------------------------------------
+model WarehouseItem {
+  id           Int      @id @default(autoincrement())
+  nomId        Int
+  batchId      Int?
+  quantity     Int
+  location     String?  // e.g. "Zone A, Rack 3, Shelf 2"
+  status       String   @default("AVAILABLE") // AVAILABLE, RESERVED, SHIPPED
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  nomenclature Nomenclature @relation(fields: [nomId], references: [id])
+  batch        Batch?       @relation(fields: [batchId], references: [id])
+}
+
+model WarehouseTransaction {
+  id         Int      @id @default(autoincrement())
+  type       String   // INCOME (from QC), OUTCOME (Shipping), MOVE (Internal)
+  nomId      Int
+  batchId    Int?
+  quantity   Int
+  fromLoc    String?
+  toLoc      String?
+  userId     Int      // User who recorded the transaction
+  createdAt  DateTime @default(now())
+
+  nomenclature Nomenclature @relation(fields: [nomId], references: [id])
+  batch        Batch?       @relation(fields: [batchId], references: [id])
+  user         User         @relation(fields: [userId], references: [id])
+}
+
+model ShippingOrder {
+  id           Int      @id @default(autoincrement())
+  orderNumber  String   @unique // e.g. "SHP-2023-001"
+  orderId      Int?     // Reference to the main Sales Order if applicable
+  status       String   @default("NEW") // NEW, GATHERING, SHIPPED
+  notes        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  createdById  Int      // TMC who created the shipment tasks
+  shippedById  Int?     // Storekeeper who dispatched the shipment
+
+  order        Order?   @relation(fields: [orderId], references: [id])
+  createdBy    User     @relation("ShippingOrderCreator", fields: [createdById], references: [id])
+  shippedBy    User?    @relation("ShippingOrderShipper", fields: [shippedById], references: [id])
+  
+  items        ShippingOrderItem[]
+}
+
+model ShippingOrderItem {
+  id              Int      @id @default(autoincrement())
+  shippingOrderId Int
+  nomId           Int
+  batchId         Int?     // specific batch requested (optional)
+  requiredQty     Int
+  pickedQty       Int      @default(0) // actual quantity collected by storekeeper
+
+  shippingOrder   ShippingOrder @relation(fields: [shippingOrderId], references: [id], onDelete: Cascade)
+  nomenclature    Nomenclature  @relation(fields: [nomId], references: [id])
+  batch           Batch?        @relation(fields: [batchId], references: [id])
 }

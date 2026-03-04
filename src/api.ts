@@ -312,5 +312,47 @@ export const api = {
     assignMoreTraining: async (materialId: number, data: any) => {
         const res = await apiClient.post(`/training/${materialId}/assign`, data);
         return res.data;
+    },
+
+    // --- WAREHOUSE ---
+    getWarehouseInventory: async () => {
+        const res = await apiClient.get('/warehouse/inventory');
+        return res.data;
+    },
+    moveWarehouseItem: async (data: any) => {
+        const res = await apiClient.post('/warehouse/move', data);
+        return res.data;
+    },
+
+    // --- SHIPPING ---
+    getShippingOrders: async () => {
+        const res = await apiClient.get('/shipping');
+        return res.data;
+    },
+    createShippingOrder: async (data: any) => {
+        const res = await apiClient.post('/shipping', data);
+        return res.data;
+    },
+    pickShippingItem: async (id: number, data: any) => {
+        const res = await apiClient.post(`/shipping/${id}/pick`, data);
+        return res.data;
+    },
+    shipShippingOrder: async (id: number) => {
+        const res = await apiClient.post(`/shipping/${id}/ship`);
+        return res.data;
+    },
+
+    // --- SALARY ---
+    getSalaryReport: async (params?: { startDate?: string; endDate?: string; workerId?: number }) => {
+        let url = '/salary/report';
+        if (params) {
+            const searchParams = new URLSearchParams();
+            if (params.startDate) searchParams.append('startDate', params.startDate);
+            if (params.endDate) searchParams.append('endDate', params.endDate);
+            if (params.workerId) searchParams.append('workerId', params.workerId.toString());
+            url += `?${searchParams.toString()}`;
+        }
+        const res = await apiClient.get(url);
+        return res.data;
     }
 };

@@ -22,6 +22,8 @@ import MasterOrders from './pages/MasterOrders';
 import MyTraining from './pages/Training/MyTraining';
 import TrainingAdmin from './pages/Training/TrainingAdmin';
 import CompetencyMatrix from './pages/Training/CompetencyMatrix';
+import TMCDashboard from './pages/Warehouse/TMCDashboard';
+import StorekeeperDashboard from './pages/Warehouse/StorekeeperDashboard';
 import './App.css';
 
 function HeaderTitle() {
@@ -43,6 +45,8 @@ function HeaderTitle() {
   else if (path.startsWith('/my-director-tasks')) title = 'Мои задания от руководителя';
   else if (path.startsWith('/sales')) title = 'Заказы от клиентов';
   else if (path.startsWith('/master-orders')) title = 'Производственные заказы';
+  else if (path.startsWith('/tmc')) title = 'ТМЦ и Склад';
+  else if (path.startsWith('/storekeeper')) title = 'Складская Логистика';
 
   return (
     <div className="flex items-center gap-2">
@@ -71,6 +75,8 @@ function HomeRedirect() {
     case 'ADMIN': return <Navigate to="/admin" replace />;
     case 'SALES': return <Navigate to="/sales" replace />;
     case 'TRAINER': return <Navigate to="/admin/training" replace />;
+    case 'TMC': return <Navigate to="/tmc" replace />;
+    case 'STOREKEEPER': return <Navigate to="/storekeeper" replace />;
     default: return <Navigate to="/calculator" replace />;
   }
 }
@@ -172,6 +178,10 @@ function MainLayout() {
               <Route path="/training" element={<ProtectedRoute><MyTraining /></ProtectedRoute>} />
               <Route path="/admin/training" element={<RoleRoute roles={['ADMIN', 'DIRECTOR', 'TRAINER']}><TrainingAdmin /></RoleRoute>} />
               <Route path="/director/matrix" element={<RoleRoute roles={['ADMIN', 'DIRECTOR', 'TRAINER']}><CompetencyMatrix /></RoleRoute>} />
+
+              {/* Warehouse Modules */}
+              <Route path="/tmc" element={<RoleRoute roles={['ADMIN', 'DIRECTOR', 'TMC']}><TMCDashboard /></RoleRoute>} />
+              <Route path="/storekeeper" element={<RoleRoute roles={['ADMIN', 'DIRECTOR', 'STOREKEEPER']}><StorekeeperDashboard /></RoleRoute>} />
             </Routes>
           </main>
 

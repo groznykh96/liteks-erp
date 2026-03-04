@@ -41,7 +41,10 @@ router.post('/', async (req: Request, res: Response) => {
         }
 
         // Validate batch exists
-        const batch = await prisma.batch.findUnique({ where: { id: parseInt(batchId) } });
+        const batch = await prisma.batch.findUnique({
+            where: { id: parseInt(batchId) },
+            include: { task: true }
+        });
         if (!batch) return res.status(404).json({ error: 'Партия не найдена' });
 
         const report = await prisma.qCReport.create({
@@ -64,6 +67,46 @@ router.post('/', async (req: Request, res: Response) => {
 
         // Optional: Implement Notification Logic here to notify batch.worker.id 
         // that their batch has been inspected
+
+        // WAREHOUSE INTEGRATION: If acceptedQty > 0, move it to "Буфер ОТК" warehouse
+        const accepted = parseInt(acceptedQty);
+        if (accepted > 0) {
+            const existingItem = await prisma.warehouseItem.findFirst({
+                where: {
+                    nomId: batch.task.partCodeId,
+                    batchId: batch.id,
+                    location: 'Буфер ОТК'
+                }
+            });
+
+            if (existingItem) {
+                await prisma.warehouseItem.update({
+                    where: { id: existingItem.id },
+                    data: { quantity: existingItem.quantity + accepted }
+                });
+            } else {
+                await prisma.warehouseItem.create({
+                    data: {
+                        nomId: batch.task.partCodeId,
+                        batchId: batch.id,
+                        quantity: accepted,
+                        location: 'Буфер ОТК'
+                    }
+                });
+            }
+
+            // Log Warehouse Transaction
+            await prisma.warehouseTransaction.create({
+                data: {
+                    type: 'INCOME',
+                    nomId: batch.task.partCodeId,
+                    batchId: batch.id,
+                    quantity: accepted,
+                    toLoc: 'Буфер ОТК',
+                    userId: inspectorId
+                }
+            });
+        }
 
         res.status(201).json(report);
     } catch (e) {

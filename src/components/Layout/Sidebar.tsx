@@ -24,8 +24,10 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
     const isTech = user.role === 'TECH' || user.role === 'TECHNOLOGIST';
     const isSales = user.role === 'SALES';
     const isTrainer = user.role === 'TRAINER';
+    const isTMC = user.role === 'TMC';
+    const isStorekeeper = user.role === 'STOREKEEPER';
 
-    const showTechModules = !isWorker && !isOtk && !isSales;
+    const showTechModules = !isWorker && !isOtk && !isSales && !isTMC && !isStorekeeper;
 
     const navLinkClasses = ({ isActive }: { isActive: boolean }) =>
         `flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors text-sm font-medium ${isActive
@@ -153,6 +155,26 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
                                 </div>
                             </div>
                         )}
+                        {/* Group: Склад и Логистика */}
+                        {(isTMC || isStorekeeper || isAdmin || isDirector) && (
+                            <div>
+                                {isOpen && <h4 className="px-3 mb-2 text-xs font-semibold text-neutral-500 uppercase tracking-wider">Склад и Логистика</h4>}
+                                <div className="space-y-1">
+                                    {(isTMC || isAdmin || isDirector) && (
+                                        <NavLink to="/tmc" className={navLinkClasses} title="ТМЦ и Склад">
+                                            <Package size={20} className="shrink-0" />
+                                            <span className={`transition-opacity duration-200 ${isOpen ? 'opacity-100' : 'lg:hidden'}`}>Управление ТМЦ</span>
+                                        </NavLink>
+                                    )}
+                                    {(isStorekeeper || isAdmin || isDirector) && (
+                                        <NavLink to="/storekeeper" className={navLinkClasses} title="Кладовщик">
+                                            <ClipboardList size={20} className="shrink-0" />
+                                            <span className={`transition-opacity duration-200 ${isOpen ? 'opacity-100' : 'lg:hidden'}`}>РМ Кладовщика</span>
+                                        </NavLink>
+                                    )}
+                                </div>
+                            </div>
+                        )}
 
                         {/* Group: База Знаний и Обучение */}
                         <div>
@@ -207,9 +229,9 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
                                 </div>
                             </div>
                         )}
-                    </nav>
-                </div>
-            </aside>
+                    </nav >
+                </div >
+            </aside >
         </>
     );
 }

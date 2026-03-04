@@ -19,6 +19,9 @@ import ordersRouter from './routes/orders';
 import instructionsRouter from './routes/instructions';
 import trainingRouter from './routes/training';
 import adminRouter from './routes/admin';
+import warehouseRouter from './routes/warehouse';
+import shippingRouter from './routes/shipping';
+import salaryRouter from './routes/salary';
 
 import { pool } from './db';
 
@@ -56,6 +59,9 @@ app.use('/api/orders', ordersRouter);
 app.use('/api/instructions', instructionsRouter);
 app.use('/api/training', trainingRouter);
 app.use('/api/admin', adminRouter);
+app.use('/api/warehouse', warehouseRouter);
+app.use('/api/shipping', shippingRouter);
+app.use('/api/salary', salaryRouter);
 
 app.get('/api/health', (req, res) => {
     res.json({ status: 'ok', message: 'Foundry ERP Backend is running' });

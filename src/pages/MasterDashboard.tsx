@@ -62,7 +62,7 @@ export default function MasterDashboard() {
             setTasks(t);
             setNomenclature(n);
             setMethods(m);
-            setWorkers(u.filter((x: any) => ['WORKER', 'TECH'].includes(x.role)));
+            setWorkers(u.filter((x: any) => ['WORKER', 'TECH', 'TRIMMER', 'MOULDER', 'POURER', 'KNOCKER', 'FINISHER'].includes(x.role)));
 
             if (n.length > 0 && !partCodeId) setPartCodeId(n[0].id.toString());
             if (m.length > 0 && !methodId) setMethodId(m[0].id.toString());
@@ -265,32 +265,38 @@ export default function MasterDashboard() {
             </div>
 
             {/* ====== МОДАЛКА ВЫДАЧИ ЗАДАЧИ ====== */}
-            {issuePlanId && (
-                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                    <div className="bg-neutral-800 border border-neutral-700 rounded-xl p-6 shadow-2xl max-w-md w-full">
-                        <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
-                            <ArrowRight className="text-green-500" /> Выдача задачи рабочему
-                        </h3>
-                        <form onSubmit={handleIssueTask} className="space-y-4 text-sm">
-                            <div>
-                                <label className="block text-neutral-400 mb-1 font-semibold uppercase text-xs tracking-wider text-green-400">Назначить Рабочего</label>
-                                <select value={issueWorkerId} onChange={e => setIssueWorkerId(e.target.value)} className="w-full bg-neutral-900 border border-neutral-700 rounded p-2 text-white outline-none focus:border-green-500 transition-colors">
-                                    <option value="">--- Не назначено ---</option>
-                                    {workers.map(w => <option key={w.id} value={w.id}>{w.fullName}</option>)}
-                                </select>
-                            </div>
-                            <div>
-                                <label className="block text-neutral-400 mb-1 font-semibold uppercase text-xs tracking-wider">Количество, шт</label>
-                                <input type="number" min="1" value={issueQuantity} onChange={e => setIssueQuantity(e.target.value)} required className="w-full bg-neutral-900 border border-neutral-700 rounded p-2 text-white outline-none focus:border-green-500 transition-colors font-mono" />
-                            </div>
-                            <div className="flex gap-4 mt-6">
-                                <button type="button" onClick={() => setIssuePlanId(null)} className="flex-1 bg-neutral-700 hover:bg-neutral-600 text-white font-bold py-2 rounded transition-colors">Отмена</button>
-                                <button type="submit" className="flex-1 bg-green-600 hover:bg-green-500 text-white font-bold py-2 rounded transition-colors shadow-md">Выдать задачу</button>
-                            </div>
-                        </form>
+            {issuePlanId && (() => {
+                const plan = plans.find(p => p.id === issuePlanId);
+                const isHTS = plan?.method.name.toUpperCase().includes('ХТС');
+                const roleLabel = isHTS ? 'Назначить Формовщика' : 'Назначить Литейщика';
+
+                return (
+                    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                        <div className="bg-neutral-800 border border-neutral-700 rounded-xl p-6 shadow-2xl max-w-md w-full">
+                            <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
+                                <ArrowRight className="text-green-500" /> Выдача задачи в производство
+                            </h3>
+                            <form onSubmit={handleIssueTask} className="space-y-4 text-sm">
+                                <div>
+                                    <label className="block text-neutral-400 mb-1 font-semibold uppercase text-xs tracking-wider text-green-400">{roleLabel}</label>
+                                    <select value={issueWorkerId} onChange={e => setIssueWorkerId(e.target.value)} className="w-full bg-neutral-900 border border-neutral-700 rounded p-2 text-white outline-none focus:border-green-500 transition-colors">
+                                        <option value="">--- Не назначено ---</option>
+                                        {workers.map(w => <option key={w.id} value={w.id}>{w.fullName} ({w.role})</option>)}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-neutral-400 mb-1 font-semibold uppercase text-xs tracking-wider">Количество, шт</label>
+                                    <input type="number" min="1" value={issueQuantity} onChange={e => setIssueQuantity(e.target.value)} required className="w-full bg-neutral-900 border border-neutral-700 rounded p-2 text-white outline-none focus:border-green-500 transition-colors font-mono" />
+                                </div>
+                                <div className="flex gap-4 mt-6">
+                                    <button type="button" onClick={() => setIssuePlanId(null)} className="flex-1 bg-neutral-700 hover:bg-neutral-600 text-white font-bold py-2 rounded transition-colors">Отмена</button>
+                                    <button type="submit" className="flex-1 bg-green-600 hover:bg-green-500 text-white font-bold py-2 rounded transition-colors shadow-md">Выдать задачу</button>
+                                </div>
+                            </form>
+                        </div>
                     </div>
-                </div>
-            )}
+                );
+            })()}
 
             {/* ====== СЕКЦИЯ АКТИВНЫХ ЗАДАЧ ====== */}
             <div className="bg-neutral-800 p-5 rounded-xl border border-neutral-700 shadow-lg">
@@ -333,7 +339,7 @@ export default function MasterDashboard() {
                                             className="bg-neutral-900 border border-neutral-700 rounded p-1.5 text-xs text-white outline-none w-32 focus:border-blue-500 transition-colors"
                                         >
                                             <option value="">- Не назначен -</option>
-                                            {workers.map(w => <option key={w.id} value={w.id}>{w.fullName.split(' ')[0]}</option>)}
+                                            {workers.map(w => <option key={w.id} value={w.id}>{w.fullName.split(' ')[0]} ({w.role})</option>)}
                                         </select>
                                     </td>
                                     <td className="p-3">

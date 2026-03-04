@@ -200,11 +200,36 @@ router.post('/:id/complete', authenticateToken, async (req: Request, res: Respon
 
 // GET /api/stages/board
 router.get('/board', authenticateToken, async (req: Request, res: Response) => {
+    const user = (req as any).user;
+    const isManagement = ['MASTER', 'DIRECTOR', 'ADMIN'].includes(user.role);
+
+    // Determine which stages this user's role can work on
+    const allowedStages = Object.entries(STAGE_ROLES)
+        .filter(([, roles]) => roles.includes(user.role))
+        .map(([stage]) => stage);
+
     try {
+        // Build where clause: management sees all, workers see only their batches
+        const whereClause: any = {
+            stages: { some: { status: { in: ['PENDING', 'IN_PROGRESS'] } } },
+        };
+
+        if (!isManagement) {
+            // Workers see batches where they are assigned to a stage OR
+            // the batch has stages matching their allowed stage types
+            whereClause.stages = {
+                some: {
+                    OR: [
+                        { workerId: user.id },
+                        { stage: { in: allowedStages }, workerId: null },
+                        { stage: { in: allowedStages }, status: { in: ['PENDING', 'IN_PROGRESS'] } },
+                    ],
+                },
+            };
+        }
+
         const batches = await (prisma as any).batch.findMany({
-            where: {
-                stages: { some: { status: { in: ['PENDING', 'IN_PROGRESS'] } } },
-            },
+            where: whereClause,
             include: {
                 task: { include: { nomenclature: true, method: true } },
                 worker: { select: { id: true, fullName: true } },

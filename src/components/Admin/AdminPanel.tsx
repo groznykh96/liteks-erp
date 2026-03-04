@@ -13,6 +13,9 @@ const ROLE_LABELS: Record<string, { label: string; color: string }> = {
     TECH: { label: 'Технолог', color: 'text-teal-400' },
     SALES: { label: 'Менеджер продаж', color: 'text-orange-300' },
     ADMIN: { label: 'Администратор', color: 'text-red-400' },
+    TMC: { label: 'Специалист ТМЦ', color: 'text-indigo-400' },
+    STOREKEEPER: { label: 'Кладовщик', color: 'text-yellow-400' },
+    TRAINER: { label: 'Учебный центр', color: 'text-pink-400' },
 };
 
 // Full default content — always visible in editor even if server unavailable
@@ -121,6 +124,18 @@ const DEFAULT_EDIT_STATE: Record<string, { title: string; content: string }> = {
 - **## Заголовок** — раздел
 - **жирный текст** через двойные звёздочки
 - **- пункт** — элемент списка`
+    },
+    TMC: {
+        title: 'Инструкция Специалиста ТМЦ',
+        content: `## 1. Складской учет\nВ разделе **«ТМЦ и Склад»** отслеживайте остатки готовой продукции по партиям и ячейкам.\n\n## 2. Отгрузки\nСоздавайте задания на отгрузку для кладовщика, указывая заказ и нужные партии деталей.\n\n## 3. Отчет по ЗП\nФормируйте выгрузку для расчета сдельной зарплаты литейщиков на основе выпущенных и принятых ОТК партий.`
+    },
+    STOREKEEPER: {
+        title: 'Инструкция Кладовщика',
+        content: `## 1. Приемка из ОТК\nВ разделе **«Складская Логистика»** принимайте проверенные детали из буфера ОТК и размещайте их по ячейкам адресного хранения (сканируйте/вводите адрес).\n\n## 2. Сборка отгрузок\nПолучайте задания на отгрузку от ТМЦ. Находите нужные детали в указанных ячейках и подтверждайте сборку нужного количества.`
+    },
+    TRAINER: {
+        title: 'Инструкция Учебного центра',
+        content: `## 1. Обучение\nВ разделе **«Администрирование обучения»** добавляйте новые инструкции и материалы для сотрудников.\n\n## 2. Матрица компетенций\nОтслеживайте, кто из сотрудников ознакомился с материалами.`
     },
 };
 
@@ -350,6 +365,9 @@ const AdminPanel: React.FC = () => {
                                     <option value="MASTER">Мастер</option>
                                     <option value="SALES">Менеджер продаж</option>
                                     <option value="DIRECTOR">Директор</option>
+                                    <option value="TMC">Специалист ТМЦ</option>
+                                    <option value="STOREKEEPER">Кладовщик</option>
+                                    <option value="TRAINER">Учебный центр</option>
                                     <option value="ADMIN">Админ</option>
                                 </select>
                             </div>

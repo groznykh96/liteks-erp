@@ -9,7 +9,7 @@ const router = Router();
 router.post('/login', login);
 
 // /api/auth/register (For Admins to create users)
-router.post('/register', authenticateToken, register);
+router.post('/register', authenticateToken, createUser);
 
 // /api/auth/me (Get current user info)
 router.get('/me', authenticateToken, getMe);

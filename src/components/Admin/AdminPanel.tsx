@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useAuth, type User } from '../../contexts/AuthContext';
-import { Trash2, UserPlus, Shield, BookOpen, Save, ChevronDown, ChevronUp } from 'lucide-react';
+import { Trash2, UserPlus, Shield, BookOpen, Save, ChevronDown, ChevronUp, Database } from 'lucide-react';
 
 import API_URL from '../../config';
 
@@ -150,6 +150,7 @@ const AdminPanel: React.FC = () => {
     const [editState, setEditState] = useState<Record<string, { title: string; content: string }>>(DEFAULT_EDIT_STATE);
     const [expandedRole, setExpandedRole] = useState<string | null>('WORKER');
     const [saving, setSaving] = useState<string | null>(null);
+    const [downloadingBackup, setDownloadingBackup] = useState(false);
 
     const getToken = () => localStorage.getItem('token');
 
@@ -232,14 +233,71 @@ const AdminPanel: React.FC = () => {
         }
     };
 
+    const handleDownloadBackup = async () => {
+        setDownloadingBackup(true);
+        try {
+            const token = getToken();
+            const res = await axios.get(`${API_URL}/admin/backup`, {
+                headers: { Authorization: `Bearer ${token}` },
+                responseType: 'blob', // Important for file handling
+            });
+
+            // Extract filename if Content-Disposition is set
+            let filename = `erp_backup_${new Date().toISOString().split('T')[0]}.sql`;
+            const disposition = res.headers['content-disposition'];
+            if (disposition && disposition.indexOf('filename=') !== -1) {
+                const regex = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/;
+                const matches = regex.exec(disposition);
+                if (matches != null && matches[1]) {
+                    filename = matches[1].replace(/['"]/g, '');
+                }
+            }
+
+            const url = window.URL.createObjectURL(new Blob([res.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', filename);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            window.URL.revokeObjectURL(url);
+        } catch (e: any) {
+            console.error('Backup Error:', e);
+            if (e.response && e.response.data && e.response.data.type === 'application/json') {
+                // Parse blob response back to json to read error message
+                const text = await (new Response(e.response.data)).text();
+                try {
+                    const json = JSON.parse(text);
+                    alert(json.error || 'Ошибка при скачивании бэкапа.');
+                } catch {
+                    alert('Ошибка при скачивании бэкапа.');
+                }
+            } else {
+                alert('Ошибка при скачивании бэкапа. Возможно утилиты БД не доступны на сервере (ожидается при локальном запуске Windows).');
+            }
+        } finally {
+            setDownloadingBackup(false);
+        }
+    };
+
     if (user?.role !== 'ADMIN') {
         return <div className="p-8 text-center text-red-500 font-bold">У вас нет прав администратора</div>;
     }
 
     return (
         <div className="space-y-6">
-            <div className="flex items-center justify-between">
-                <h2 className="text-2xl font-bold flex items-center gap-2"><Shield /> Управление Персоналом (Панель Админа)</h2>
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                <h2 className="text-2xl font-bold flex items-center gap-2"><Shield /> Панель Администратора</h2>
+
+                <button
+                    onClick={handleDownloadBackup}
+                    disabled={downloadingBackup}
+                    className="flex items-center gap-2 px-4 py-2 bg-neutral-800 hover:bg-neutral-700 text-neutral-300 font-bold rounded-lg border border-neutral-700 transition-colors shadow-sm disabled:opacity-50"
+                    title="Скачать полную резервную копию базы данных (.sql)"
+                >
+                    <Database size={18} />
+                    {downloadingBackup ? 'Создание архива...' : 'Выгрузить базу данных'}
+                </button>
             </div>
 
             {/* Tabs */}

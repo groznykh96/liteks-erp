@@ -359,7 +359,12 @@ const AdminPanel: React.FC = () => {
                                 <label className="block text-neutral-400 mb-1">Роль</label>
                                 <select value={role} onChange={e => setRole(e.target.value)}
                                     className="w-full bg-neutral-900 border border-neutral-700 rounded p-2 focus:border-blue-500 outline-none">
-                                    <option value="WORKER">Рабочий</option>
+                                    <option value="WORKER">Рабочий (Общий)</option>
+                                    <option value="TRIMMER">Обрубщик</option>
+                                    <option value="MOULDER">Формовщик</option>
+                                    <option value="POURER">Заливщик</option>
+                                    <option value="KNOCKER">Выбивщик</option>
+                                    <option value="FINISHER">Доработчик</option>
                                     <option value="OTK">Сотрудник ОТК</option>
                                     <option value="TECH">Технолог</option>
                                     <option value="MASTER">Мастер</option>

@@ -76,6 +76,9 @@ const ROLE_COLORS: Record<string, string> = {
     TECH: 'text-teal-400',
     SALES: 'text-orange-300',
     ADMIN: 'text-red-400',
+    TMC: 'text-indigo-400',
+    STOREKEEPER: 'text-yellow-400',
+    TRAINER: 'text-pink-400',
 };
 
 export default function Instructions() {

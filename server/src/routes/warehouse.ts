@@ -114,4 +114,68 @@ router.post('/move', async (req: Request, res: Response) => {
     }
 });
 
+// 3. Manual item add
+router.post('/add', async (req: Request, res: Response) => {
+    try {
+        const user = (req as any).user;
+        if (!isWarehouseStaff(user.role)) {
+            return res.status(403).json({ error: 'Доступ запрещен' });
+        }
+
+        const { nomId, quantity, location, batchId } = req.body;
+        if (!nomId || !quantity || !location) {
+            return res.status(400).json({ error: 'Заполните номенклатуру, локацию и количество' });
+        }
+
+        const qtyToMove = parseInt(quantity);
+        if (qtyToMove <= 0) return res.status(400).json({ error: 'Количество должно быть > 0' });
+
+        const parsedBatchId = batchId ? parseInt(batchId) : null;
+
+        await prisma.$transaction(async (tx) => {
+            const existing = await tx.warehouseItem.findFirst({
+                where: {
+                    nomId: parseInt(nomId),
+                    batchId: parsedBatchId,
+                    location: location,
+                    status: 'AVAILABLE'
+                }
+            });
+
+            if (existing) {
+                await tx.warehouseItem.update({
+                    where: { id: existing.id },
+                    data: { quantity: existing.quantity + qtyToMove }
+                });
+            } else {
+                await tx.warehouseItem.create({
+                    data: {
+                        nomId: parseInt(nomId),
+                        batchId: parsedBatchId,
+                        location: location,
+                        status: 'AVAILABLE',
+                        quantity: qtyToMove
+                    }
+                });
+            }
+
+            await tx.warehouseTransaction.create({
+                data: {
+                    type: 'INCOME',
+                    nomId: parseInt(nomId),
+                    batchId: parsedBatchId,
+                    quantity: qtyToMove,
+                    toLoc: location,
+                    userId: user.id
+                }
+            });
+        });
+
+        res.json({ success: true });
+    } catch (e) {
+        console.error('Error adding item:', e);
+        res.status(500).json({ error: 'Ошибка при доступе к складу' });
+    }
+});
+
 export default router;

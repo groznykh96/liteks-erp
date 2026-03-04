@@ -90,7 +90,7 @@ router.get('/my', authenticateToken, async (req: Request, res: Response) => {
 // POST /api/stages/:id/start
 router.post('/:id/start', authenticateToken, async (req: Request, res: Response) => {
     const user = (req as any).user;
-    const stageId = parseInt(req.params.id);
+    const stageId = parseInt(req.params.id as string);
     try {
         const stage = await db.productionStage.findUnique({ where: { id: stageId } });
         if (!stage) return res.status(404).json({ error: 'Этап не найден' });
@@ -110,7 +110,7 @@ router.post('/:id/start', authenticateToken, async (req: Request, res: Response)
 // POST /api/stages/:id/complete
 router.post('/:id/complete', authenticateToken, async (req: Request, res: Response) => {
     const user = (req as any).user;
-    const stageId = parseInt(req.params.id);
+    const stageId = parseInt(req.params.id as string);
     const { qtyOut, qtyRejected, note } = req.body;
 
     if (qtyOut === undefined || qtyOut === null) {
@@ -215,15 +215,17 @@ router.get('/stats', authenticateToken, async (req: Request, res: Response) => {
     if (!['MASTER', 'DIRECTOR', 'ADMIN'].includes(user.role)) {
         return res.status(403).json({ error: 'Нет доступа' });
     }
-
     const { from, to } = req.query;
     try {
+        const fromStr = typeof from === 'string' ? from : undefined;
+        const toStr = typeof to === 'string' ? to : undefined;
+
         const stages = await db.productionStage.findMany({
             where: {
                 status: 'DONE',
                 completedAt: {
-                    gte: from ? new Date(from as string) : undefined,
-                    lte: to ? new Date(to as string) : undefined,
+                    gte: fromStr ? new Date(fromStr) : undefined,
+                    lte: toStr ? new Date(toStr) : undefined,
                 },
             },
             include: {
@@ -269,7 +271,7 @@ router.put('/:id/assign', authenticateToken, async (req: Request, res: Response)
     if (!['MASTER', 'ADMIN'].includes(user.role)) {
         return res.status(403).json({ error: 'Нет доступа' });
     }
-    const stageId = parseInt(req.params.id);
+    const stageId = parseInt(req.params.id as string);
     const { workerId } = req.body;
     try {
         const updated = await db.productionStage.update({

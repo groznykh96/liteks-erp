@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { api } from '../api';
-import { PieChart, TrendingDown, TrendingUp, Users } from 'lucide-react';
+import { PieChart, TrendingUp, Users } from 'lucide-react';
 
 interface StageStat {
     stage: string;

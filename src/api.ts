@@ -323,6 +323,10 @@ export const api = {
         const res = await apiClient.post('/warehouse/move', data);
         return res.data;
     },
+    addWarehouseItem: async (data: { nomId: string | number, quantity: number, location: string, batchId?: string | number }) => {
+        const res = await apiClient.post('/warehouse/add', data);
+        return res.data;
+    },
 
     // --- SHIPPING ---
     getShippingOrders: async () => {

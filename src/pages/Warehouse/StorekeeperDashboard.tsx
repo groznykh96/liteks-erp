@@ -47,6 +47,10 @@ function IncomeTab() {
     const [newLocation, setNewLocation] = useState('');
     const [moveQty, setMoveQty] = useState<number>(0);
 
+    const [isAddingManually, setIsAddingManually] = useState(false);
+    const [availableNomenclatures, setAvailableNomenclatures] = useState<any[]>([]);
+    const [newItem, setNewItem] = useState({ nomId: '', quantity: 1, location: '', batchId: '' });
+
     const loadInventory = async () => {
         setLoading(true);
         try {
@@ -60,8 +64,16 @@ function IncomeTab() {
         }
     };
 
+    const loadNomenclatures = async () => {
+        try {
+            const data = await api.getNomenclature();
+            setAvailableNomenclatures(data);
+        } catch (e) { console.error('Failed to load nomenclatures', e); }
+    };
+
     useEffect(() => {
         loadInventory();
+        loadNomenclatures();
     }, []);
 
     const handleMove = async (e: React.FormEvent) => {
@@ -70,8 +82,8 @@ function IncomeTab() {
         try {
             await api.moveWarehouseItem({
                 itemId: movingItem.id,
-                newLocation: newLocation,
-                quantity: moveQty
+                targetLocation: newLocation,
+                moveQty: moveQty
             });
             setMovingItem(null);
             setNewLocation('');
@@ -81,14 +93,93 @@ function IncomeTab() {
         }
     };
 
+    const handleManualAdd = async (e: React.FormEvent) => {
+        e.preventDefault();
+        try {
+            await api.addWarehouseItem(newItem);
+            setIsAddingManually(false);
+            setNewItem({ nomId: '', quantity: 1, location: '', batchId: '' });
+            loadInventory();
+            alert('Детали успешно размещены на складе');
+        } catch (e: any) {
+            alert(e.response?.data?.error || 'Ошибка при добавлении на склад');
+        }
+    };
+
     return (
         <div className="space-y-4">
             <div className="flex justify-between items-center mb-4">
                 <h2 className="text-lg font-semibold text-white">Ожидают размещения (Буфер ОТК)</h2>
-                <button onClick={loadInventory} className="text-sm bg-neutral-700 text-white px-3 py-1.5 rounded hover:bg-neutral-600">
-                    Обновить
-                </button>
+                <div className="flex gap-2">
+                    <button onClick={loadInventory} className="text-sm bg-neutral-700 text-white px-3 py-1.5 rounded hover:bg-neutral-600">
+                        Обновить
+                    </button>
+                    {!isAddingManually && (
+                        <button onClick={() => setIsAddingManually(true)} className="text-sm bg-blue-600 text-white px-3 py-1.5 rounded flex items-center gap-1 hover:bg-blue-500">
+                            + Разместить вручную
+                        </button>
+                    )}
+                </div>
             </div>
+
+            {isAddingManually && (
+                <div className="bg-neutral-700/30 border border-neutral-600 rounded-lg p-4 mb-4">
+                    <h3 className="text-white font-medium mb-4">Ручное размещение номенклатуры на складе</h3>
+                    <form onSubmit={handleManualAdd} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="md:col-span-2">
+                            <label className="block text-xs text-neutral-400 mb-1">Номенклатура</label>
+                            <select
+                                value={newItem.nomId}
+                                onChange={e => setNewItem({ ...newItem, nomId: e.target.value })}
+                                className="w-full bg-neutral-800 border border-neutral-600 text-white text-sm rounded px-3 py-2 outline-none focus:border-blue-500"
+                                required
+                            >
+                                <option value="">-- Выберите деталь --</option>
+                                {availableNomenclatures.map(n => (
+                                    <option key={n.id} value={n.id}>{n.name}</option>
+                                ))}
+                            </select>
+                        </div>
+                        <div>
+                            <label className="block text-xs text-neutral-400 mb-1">Количество</label>
+                            <input
+                                type="number"
+                                min="1"
+                                value={newItem.quantity}
+                                onChange={e => setNewItem({ ...newItem, quantity: Number(e.target.value) })}
+                                className="w-full bg-neutral-800 border border-neutral-600 text-white text-sm rounded px-3 py-2 outline-none focus:border-blue-500"
+                                required
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-xs text-neutral-400 mb-1">Где разместить (Адрес)</label>
+                            <input
+                                type="text"
+                                value={newItem.location}
+                                onChange={e => setNewItem({ ...newItem, location: e.target.value })}
+                                placeholder="Напр. Р1-С2-П3"
+                                className="w-full bg-neutral-800 border border-neutral-600 text-white text-sm rounded px-3 py-2 outline-none focus:border-blue-500"
+                                required
+                            />
+                        </div>
+                        <div className="md:col-span-2 flex justify-end gap-2 mt-2">
+                            <button
+                                type="button"
+                                onClick={() => setIsAddingManually(false)}
+                                className="px-4 py-2 rounded text-sm text-neutral-300 hover:text-white"
+                            >
+                                Отмена
+                            </button>
+                            <button
+                                type="submit"
+                                className="px-4 py-2 rounded text-sm font-medium bg-green-600 text-white hover:bg-green-500"
+                            >
+                                Разместить
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            )}
 
             {loading ? (
                 <div className="text-neutral-400 text-sm">Загрузка...</div>

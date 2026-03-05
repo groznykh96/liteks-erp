@@ -213,7 +213,6 @@ function ShippingTab() {
     };
 
     const handleConfirmOrder = async (id: number) => {
-        if (!confirm('Подтвердить задание на отгрузку?')) return;
         try {
             await api.confirmShippingOrder(id);
             loadOrders();

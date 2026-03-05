@@ -272,8 +272,8 @@ function PickingTab() {
         setLoading(true);
         try {
             const data = await api.getShippingOrders();
-            // Storekeeper only sees NEW and GATHERING
-            setOrders(data.filter((o: any) => o.status === 'NEW' || o.status === 'GATHERING'));
+            // Storekeeper only sees CONFIRMED and GATHERING (waiting for assembly)
+            setOrders(data.filter((o: any) => o.status === 'CONFIRMED' || o.status === 'GATHERING'));
         } catch (e) {
             console.error(e);
         } finally {
@@ -328,8 +328,8 @@ function PickingTab() {
                                     <h3 className="text-white font-bold text-base">Задание #{o.orderNumber}</h3>
                                     <div className="text-xs text-neutral-400">От: {o.createdBy?.fullName || 'ТМЦ'}</div>
                                 </div>
-                                <span className={`px-2 py-0.5 rounded text-xs font-bold ${o.status === 'GATHERING' ? 'bg-orange-500/20 text-orange-400' : 'bg-blue-500/20 text-blue-400'}`}>
-                                    {o.status === 'GATHERING' ? 'В процессе сборки' : 'Новое'}
+                                <span className={`px-2 py-0.5 rounded text-xs font-bold ${o.status === 'GATHERING' ? 'bg-orange-500/20 text-orange-400' : 'bg-blue-500/20 text-purple-400'}`}>
+                                    {o.status === 'GATHERING' ? 'В процессе сборки' : 'Подтверждено'}
                                 </span>
                             </div>
 

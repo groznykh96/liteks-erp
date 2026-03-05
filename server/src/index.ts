@@ -23,6 +23,7 @@ import warehouseRouter from './routes/warehouse';
 import shippingRouter from './routes/shipping';
 import salaryRouter from './routes/salary';
 import stagesRouter from './routes/stages';
+import departmentsRouter from './routes/departments';
 
 import { pool } from './db';
 
@@ -48,6 +49,7 @@ app.use(express.json());
 
 app.use('/api/auth', authRouter);
 app.use('/api/users', usersRouter);
+app.use('/api/departments', departmentsRouter);
 app.use('/api/tasks', tasksRouter);
 app.use('/api/plan', planRouter);
 app.use('/api/inspections', inspectionsRouter);

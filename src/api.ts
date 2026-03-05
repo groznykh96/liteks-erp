@@ -399,5 +399,19 @@ export const api = {
     assignStageWorker: async (id: number, data: { workerId: number | null }) => {
         const res = await apiClient.put(`/stages/${id}/assign`, data);
         return res.data;
+    },
+
+    // --- DEPARTMENTS ---
+    getDepartments: async () => {
+        const res = await apiClient.get('/departments');
+        return res.data;
+    },
+    saveDepartment: async (data: { id?: number, name: string }) => {
+        const res = await apiClient.post('/departments', data);
+        return res.data;
+    },
+    deleteDepartment: async (id: number) => {
+        const res = await apiClient.delete(`/departments/${id}`);
+        return res.data;
     }
 };

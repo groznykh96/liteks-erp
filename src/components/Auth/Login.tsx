@@ -2,8 +2,6 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { Info } from 'lucide-react';
-import PresentationModal from './PresentationModal';
 
 import API_URL from '../../config';
 
@@ -13,7 +11,6 @@ const Login: React.FC = () => {
     const [error, setError] = useState('');
     const { login } = useAuth();
     const navigate = useNavigate();
-    const [showPresentation, setShowPresentation] = useState(false);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -84,18 +81,7 @@ const Login: React.FC = () => {
                         ВОЙТИ В СИСТЕМУ
                     </button>
                 </form>
-
-                <div className="mt-6 text-center">
-                    <button
-                        onClick={() => setShowPresentation(true)}
-                        className="text-neutral-300 hover:text-white text-sm font-medium transition-colors flex items-center justify-center gap-2 mx-auto"
-                    >
-                        <Info size={16} /> Узнать возможности системы
-                    </button>
-                </div>
             </div>
-
-            <PresentationModal isOpen={showPresentation} onClose={() => setShowPresentation(false)} />
         </div>
     );
 };

@@ -12,6 +12,11 @@ datasource db {
 // -----------------------------------------
 // 1. Roles and Users
 // -----------------------------------------
+model Department {
+  id   Int    @id @default(autoincrement())
+  name String @unique
+}
+
 model User {
   id           Int      @id @default(autoincrement())
   fullName     String

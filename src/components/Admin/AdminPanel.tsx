@@ -167,6 +167,9 @@ const AdminPanel: React.FC = () => {
     const [saving, setSaving] = useState<string | null>(null);
     const [downloadingBackup, setDownloadingBackup] = useState(false);
 
+    // Departments state
+    const [deps, setDeps] = useState<{ id: number, name: string }[]>([]);
+
     const getToken = () => localStorage.getItem('token');
 
     const fetchUsers = async () => {
@@ -204,9 +207,21 @@ const AdminPanel: React.FC = () => {
         }
     };
 
+    const fetchDeps = async () => {
+        try {
+            const res = await axios.get(`${API_URL}/departments`, {
+                headers: { Authorization: `Bearer ${getToken()}` }
+            });
+            setDeps(res.data);
+        } catch (e) {
+            console.error('Failed to fetch deps', e);
+        }
+    };
+
     useEffect(() => {
         fetchUsers();
         fetchInstructions();
+        fetchDeps();
     }, []);
 
     const handleCreateUser = async (e: React.FormEvent) => {
@@ -381,10 +396,9 @@ const AdminPanel: React.FC = () => {
                                 <select value={department} onChange={e => setDepartment(e.target.value)}
                                     className="w-full bg-neutral-900 border border-neutral-700 rounded p-2 focus:border-blue-500 outline-none">
                                     <option value="">Не указан</option>
-                                    <option value="ХТС">ХТС</option>
-                                    <option value="Кокиль">Кокиль</option>
-                                    <option value="МЛПД">МЛПД</option>
-                                    <option value="ОТК">ОТК</option>
+                                    {deps.map(d => (
+                                        <option key={d.id} value={d.name}>{d.name}</option>
+                                    ))}
                                 </select>
                             </div>
                             <button type="submit"

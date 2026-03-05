@@ -1,17 +1,19 @@
 import { useState, useEffect } from 'react';
 import { api } from '../api';
 import { useAuth } from '../contexts/AuthContext';
-import { BookOpen, Database, Plus, Save, Trash2, Edit2, X, AlertCircle, Box, RefreshCcw } from 'lucide-react';
+import { BookOpen, Database, Plus, Save, Trash2, Edit2, X, AlertCircle, Box, RefreshCcw, Building2 } from 'lucide-react';
 import { ELEMENTS } from '../utils/calculator';
 import { DEFAULT_ALLOYS } from '../fallbackData';
 import ConfirmModal from '../components/UI/ConfirmModal';
 
 export default function References() {
-    const [tab, setTab] = useState<'alloys' | 'materials' | 'nom'>('alloys');
+    const { user } = useAuth();
+    const [tab, setTab] = useState<'alloys' | 'materials' | 'nom' | 'deps'>('alloys');
+    const canEditDeps = ['MASTER', 'TECHNOLOGIST', 'TECH', 'ADMIN', 'DIRECTOR'].includes(user?.role || '');
 
     return (
         <div className="space-y-6">
-            <div className="flex items-center gap-3 border-b border-neutral-700 pb-4">
+            <div className="flex items-center gap-3 border-b border-neutral-700 pb-4 flex-wrap">
                 <button onClick={() => setTab('alloys')} className={`px-4 py-2 rounded-lg font-bold transition-all flex items-center gap-2 ${tab === 'alloys' ? 'bg-indigo-600 text-white' : 'bg-neutral-800 text-neutral-400 hover:text-white'}`}>
                     <Database size={18} /> Реестр ГОСТов (Сплавы)
                 </button>
@@ -21,11 +23,17 @@ export default function References() {
                 <button onClick={() => setTab('nom')} className={`px-4 py-2 rounded-lg font-bold transition-all flex items-center gap-2 ${tab === 'nom' ? 'bg-indigo-600 text-white' : 'bg-neutral-800 text-neutral-400 hover:text-white'}`}>
                     <Box size={18} /> Справочник отливок
                 </button>
+                {canEditDeps && (
+                    <button onClick={() => setTab('deps')} className={`px-4 py-2 rounded-lg font-bold transition-all flex items-center gap-2 ${tab === 'deps' ? 'bg-indigo-600 text-white' : 'bg-neutral-800 text-neutral-400 hover:text-white'}`}>
+                        <Building2 size={18} /> Подразделения (Цеха)
+                    </button>
+                )}
             </div>
 
             {tab === 'alloys' && <AlloysEditor />}
             {tab === 'materials' && <MaterialsEditor />}
             {tab === 'nom' && <NomenclatureEditor />}
+            {tab === 'deps' && canEditDeps && <DepartmentsEditor />}
         </div>
     );
 }
@@ -584,6 +592,126 @@ function NomenclatureEditor() {
                                         <td className="p-3 flex justify-center gap-2">
                                             <button onClick={() => handleEdit(n, i)} className="p-1.5 rounded bg-neutral-700 hover:bg-neutral-600 text-blue-400"><Edit2 size={16} /></button>
                                             <button onClick={() => handleDelete(n.id)} className="p-1.5 rounded bg-neutral-700 hover:bg-red-900/50 text-red-500"><Trash2 size={16} /></button>
+                                        </td>
+                                    )}
+                                </tr>
+                            );
+                        })}
+                    </tbody>
+                </table>
+            </div>
+
+            <ConfirmModal
+                isOpen={confirmState.isOpen}
+                title={confirmState.title}
+                message={confirmState.message}
+                confirmText={confirmState.confirmText}
+                onConfirm={confirmState.onConfirm}
+                onCancel={() => setConfirmState(s => ({ ...s, isOpen: false }))}
+            />
+        </div>
+    );
+}
+
+// ======================= DEPARTMENTS EDITOR =======================
+function DepartmentsEditor() {
+    const { user } = useAuth();
+    const canEdit = ['MASTER', 'TECHNOLOGIST', 'TECH', 'ADMIN', 'DIRECTOR'].includes(user?.role || '');
+
+    const [deps, setDeps] = useState<any[]>([]);
+    const [editingIdx, setEditingIdx] = useState<number | null>(null);
+    const [editForm, setEditForm] = useState<any>({});
+
+    const [confirmState, setConfirmState] = useState<{ isOpen: boolean, message: string, onConfirm: () => void, title?: string, confirmText?: string }>({
+        isOpen: false, message: '', onConfirm: () => { }
+    });
+
+    const load = async () => setDeps(await api.getDepartments());
+    useEffect(() => { load(); }, []);
+
+    const handleEdit = (d: any, idx: number) => {
+        if (!canEdit) return;
+        setEditingIdx(idx);
+        setEditForm({ ...d });
+    };
+
+    const handleSave = async () => {
+        if (!canEdit) return;
+        if (!editForm.name.trim()) return alert('Название не может быть пустым');
+        if (api.saveDepartment) await api.saveDepartment(editForm);
+        setEditingIdx(null);
+        load();
+    };
+
+    const handleDelete = async (id: number) => {
+        if (!canEdit) return;
+        setConfirmState({
+            isOpen: true,
+            title: 'Удаление цеха',
+            message: 'Удалить это подразделение?',
+            confirmText: 'Удалить',
+            onConfirm: async () => {
+                setConfirmState(s => ({ ...s, isOpen: false }));
+                if (api.deleteDepartment) await api.deleteDepartment(id);
+                load();
+            }
+        });
+    };
+
+    const handleAddNew = () => {
+        if (!canEdit) return;
+        const item = { name: 'НОВЫЙ ЦЕХ' };
+        if (api.saveDepartment) {
+            api.saveDepartment(item).then(load);
+        }
+    };
+
+    return (
+        <div className="bg-neutral-800 rounded-xl border border-neutral-700 shadow-lg overflow-hidden flex flex-col">
+            <div className="p-4 border-b border-neutral-700 bg-neutral-900/50 flex flex-wrap gap-4 items-center justify-between">
+                <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                    <Building2 size={18} className="text-blue-500" /> Справочник подразделений (чехов)
+                </h3>
+                {canEdit && (
+                    <button onClick={handleAddNew} className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold transition-all shadow-md active:scale-95 text-sm rounded-md">
+                        <Plus size={16} /> ДОБАВИТЬ ЦЕХ
+                    </button>
+                )}
+            </div>
+
+            <div className="overflow-x-auto">
+                <table className="w-full text-sm text-center">
+                    <thead className="bg-neutral-950/40 text-neutral-400">
+                        <tr>
+                            <th className="px-4 py-3 text-left w-16">ID</th>
+                            <th className="px-4 py-3 text-left">Название подразделения</th>
+                            {canEdit && <th className="px-4 py-3">Действия</th>}
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-neutral-700">
+                        {deps.length === 0 && <tr><td colSpan={canEdit ? 3 : 2} className="py-6 text-neutral-500">Справочник пуст</td></tr>}
+                        {deps.map((d, i) => {
+                            if (editingIdx === i && canEdit) {
+                                return (
+                                    <tr key={d.id} className="bg-neutral-700/50">
+                                        <td className="p-3 text-left text-neutral-500">#{d.id}</td>
+                                        <td className="p-2"><input className="w-full max-w-sm bg-neutral-900 border border-neutral-600 rounded p-1 text-white" value={editForm.name} onChange={e => setEditForm({ ...editForm, name: e.target.value })} /></td>
+                                        <td className="p-2 flex justify-center gap-2">
+                                            <button onClick={handleSave} className="bg-green-600 p-1.5 rounded hover:bg-green-500 text-white"><Save size={16} /></button>
+                                            <button onClick={() => setEditingIdx(null)} className="bg-neutral-600 p-1.5 rounded hover:bg-neutral-500 text-white"><X size={16} /></button>
+                                        </td>
+                                    </tr>
+                                );
+                            }
+
+                            return (
+                                <tr key={d.id} className="hover:bg-neutral-700/30">
+                                    <td className="p-3 text-left text-neutral-500">#{d.id}</td>
+                                    <td className="p-3 text-left font-bold text-white">{d.name}</td>
+                                    {canEdit && (
+                                        <td className="p-3 flex justify-center gap-2">
+                                            <button onClick={() => handleEdit(d, i)} className="p-1.5 rounded bg-neutral-700 hover:bg-neutral-600 text-blue-400"><Edit2 size={16} /></button>
+                                            <button onClick={() => handleDelete(d.id)} className="p-1.5 rounded bg-neutral-700 hover:bg-red-900/50 text-red-500"><Trash2 size={16} /></button>
                                         </td>
                                     )}
                                 </tr>

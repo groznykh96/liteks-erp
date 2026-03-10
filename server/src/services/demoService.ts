@@ -123,14 +123,52 @@ export class DemoService {
 
     static getMockPlan() {
         return [
-            { id: 1, nomenclature: 'Корпус А1', plannedQty: 100, actualQty: 45, startDate: new Date(), endDate: new Date(Date.now() + 86400000 * 3) }
+            { 
+                id: 1, 
+                nomenclature: { id: 1, name: 'Корпус А1', code: 'АЛ-001' }, 
+                method: { id: 1, name: 'ХТС' },
+                plannedQuantity: 100, 
+                actualQty: 45, 
+                planDate: new Date().toISOString().split('T')[0],
+                priority: 2,
+                status: 'NEW',
+                tasks: [
+                    { id: 101, taskNumber: 'T-2026-001', quantity: 45 }
+                ]
+            }
         ];
     }
 
     static getMockInspections() {
         return [
-            { id: 1, batchNumber: '778', nomenclature: 'Корпус А1', status: 'PEDNING', createdAt: new Date() },
-            { id: 2, batchNumber: '775', nomenclature: 'Втулка Б2', status: 'COMPLETED', result: 'ACCEPTED', goodQty: 50, badQty: 2 }
+            { 
+                id: 1, 
+                batch: { 
+                    batchNumber: 'DEMO-778', 
+                    task: { nomenclature: { code: 'АЛ-001', name: 'Корпус А1' } },
+                    worker: { fullName: 'Иванов И.' }
+                }, 
+                inspectionDate: new Date().toISOString(),
+                createdAt: new Date().toISOString(),
+                status: 'PENDING', 
+                acceptedQty: 0,
+                rejectedQty: 0,
+            },
+            { 
+                id: 2, 
+                batch: { 
+                    batchNumber: 'DEMO-775', 
+                    task: { nomenclature: { code: 'АЛ-002', name: 'Втулка Б2' } },
+                    worker: { fullName: 'Петров П.' }
+                }, 
+                inspectionDate: new Date().toISOString(),
+                createdAt: new Date().toISOString(),
+                status: 'COMPLETED', 
+                result: 'ACCEPTED', 
+                acceptedQty: 50, 
+                rejectedQty: 2,
+                inspector: { fullName: 'Смирнов С.' }
+            }
         ];
     }
 

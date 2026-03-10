@@ -100,7 +100,7 @@ const DemoOnboarding: React.FC<DemoOnboardingProps> = ({ onClose }) => {
                     {slides[currentStep].imageUrl && (
                         <div className="w-full h-64 bg-neutral-800 rounded-xl overflow-hidden mb-6 border border-neutral-700 shadow-inner flex items-center justify-center group">
                             <img 
-                                src={`/brain/${slides[currentStep].imageUrl}`} 
+                                src={`/demo-assets/${slides[currentStep].imageUrl}`} 
                                 alt={slides[currentStep].title}
                                 className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500"
                             />

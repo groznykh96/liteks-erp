@@ -1,4 +1,7 @@
+import { Router, Request, Response } from 'express';
 import { DemoService } from '../services/demoService';
+import { authenticateToken } from '../middlewares/authMiddleware';
+import prisma from '../db';
 
 const router = Router();
 router.use(authenticateToken);
@@ -43,7 +46,7 @@ router.get('/report', async (req: Request, res: Response) => {
         });
 
         // Group by worker
-        const report = batches.reduce((acc: any, batch) => {
+        const report = batches.reduce((acc: any, batch: any) => {
             const workerId = batch.worker.id;
             if (!acc[workerId]) {
                 acc[workerId] = {
@@ -55,8 +58,8 @@ router.get('/report', async (req: Request, res: Response) => {
                 };
             }
 
-            const acceptedQty = batch.qcReports.reduce((sum, r) => sum + r.acceptedQty, 0);
-            const rejectedQty = batch.qcReports.reduce((sum, r) => sum + r.rejectedQty, 0);
+            const acceptedQty = batch.qcReports.reduce((sum: number, r: any) => sum + r.acceptedQty, 0);
+            const rejectedQty = batch.qcReports.reduce((sum: number, r: any) => sum + r.rejectedQty, 0);
 
             acc[workerId].totalCompleted += batch.completedQuantity;
             acc[workerId].totalAcceptedQA += acceptedQty;

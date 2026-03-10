@@ -1,4 +1,7 @@
+import { Router, Request, Response } from 'express';
 import { DemoService } from '../services/demoService';
+import { authenticateToken } from '../middlewares/authMiddleware';
+import prisma from '../db';
 
 const router = Router();
 router.use(authenticateToken);

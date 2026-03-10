@@ -16,7 +16,7 @@ const slides: Slide[] = [
     {
         id: 1,
         title: 'Добро пожаловать в ЛИТЭКС ERP',
-        content: 'Это ознакомительный тур по системе управления литейным производством. Вы находитесь в демонстрационном режиме.',
+        content: 'Это ознакомительная презентация системы управления литейным производством. Вы находитесь в демонстрационном режиме.',
     },
     {
         id: 2,
@@ -81,14 +81,14 @@ const DemoOnboarding: React.FC<DemoOnboardingProps> = ({ onClose }) => {
 
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-            <div className="bg-neutral-900 border border-neutral-800 rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-300">
+            <div className="bg-neutral-900 border border-neutral-800 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl animate-in fade-in zoom-in duration-300 flex flex-col">
                 {/* Header */}
                 <div className="flex items-center justify-between p-6 border-b border-neutral-800 bg-neutral-900/50">
                     <div className="flex items-center gap-3">
                         <div className="p-2 bg-yellow-500/20 text-yellow-500 rounded-lg">
                             <Play size={20} fill="currentColor" />
                         </div>
-                        <h2 className="text-xl font-bold text-white uppercase tracking-wider">Демонстрационный тур</h2>
+                        <h2 className="text-xl font-bold text-white uppercase tracking-wider">Презентация системы</h2>
                     </div>
                     <button onClick={onClose} className="p-2 hover:bg-neutral-800 rounded-full text-neutral-400 transition-colors">
                         <X size={20} />
@@ -96,7 +96,7 @@ const DemoOnboarding: React.FC<DemoOnboardingProps> = ({ onClose }) => {
                 </div>
 
                 {/* Content Area */}
-                <div className="p-8 min-h-[450px] flex flex-col items-center text-center">
+                <div className="p-4 sm:p-8 min-h-[450px] flex-1 flex flex-col items-center text-center">
                     {slides[currentStep].imageUrl && (
                         <div className="w-full h-64 bg-neutral-800 rounded-xl overflow-hidden mb-6 border border-neutral-700 shadow-inner flex items-center justify-center group">
                             <img 
@@ -130,7 +130,7 @@ const DemoOnboarding: React.FC<DemoOnboardingProps> = ({ onClose }) => {
                 </div>
 
                 {/* Footer Actions */}
-                <div className="p-6 bg-neutral-950/50 border-t border-neutral-800 flex items-center justify-between">
+                <div className="p-4 sm:p-6 bg-neutral-950/50 border-t border-neutral-800 flex items-center justify-between shrink-0">
                     <button 
                         onClick={prev}
                         disabled={currentStep === 0}
@@ -142,7 +142,7 @@ const DemoOnboarding: React.FC<DemoOnboardingProps> = ({ onClose }) => {
                     
                     <button 
                         onClick={next}
-                        className="flex items-center gap-2 px-8 py-3 bg-yellow-500 hover:bg-yellow-400 text-black font-bold rounded-xl transition-all shadow-lg shadow-yellow-500/10 active:scale-95"
+                        className="flex items-center gap-2 px-6 sm:px-8 py-3 bg-yellow-500 hover:bg-yellow-400 text-black font-bold rounded-xl transition-all shadow-lg shadow-yellow-500/10 active:scale-95"
                     >
                         {currentStep === slides.length - 1 ? 'Начать работу' : 'Далее'}
                         <ChevronRight size={20} />

@@ -399,13 +399,13 @@ export default function WorkerDashboard() {
                 <div className="overflow-x-auto">
                     <table className="w-full text-left border-collapse text-sm">
                         <thead>
-                            <tr className="bg-neutral-900 border-b border-neutral-700 text-neutral-400">
-                                <th className="p-3">Партия</th>
-                                <th className="p-3">Дата</th>
-                                <th className="p-3">Деталь</th>
-                                <th className="p-3">Сдано фактом</th>
-                                <th className="p-3 hidden md:table-cell">Параметры</th>
-                                <th className="p-3">Статус ОТК</th>
+                            <tr className="bg-neutral-900 border-b border-neutral-700 text-neutral-400 text-[10px] sm:text-sm">
+                                <th className="p-2 sm:p-3">Партия</th>
+                                <th className="p-2 sm:p-3 hidden sm:table-cell">Дата</th>
+                                <th className="p-2 sm:p-3">Деталь</th>
+                                <th className="p-2 sm:p-3">Сдано</th>
+                                <th className="p-2 sm:p-3 hidden md:table-cell">Параметры</th>
+                                <th className="p-2 sm:p-3">Статус ОТК</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -415,22 +415,22 @@ export default function WorkerDashboard() {
 
                                 return (
                                     <tr key={b.id} className="border-b border-neutral-800 hover:bg-neutral-800/50 transition-colors">
-                                        <td className="p-3 font-mono font-bold text-neutral-300">{b.batchNumber}</td>
-                                        <td className="p-3 text-neutral-500">{new Date(b.createdAt).toLocaleString()}</td>
-                                        <td className="p-3 bg-neutral-900/40">
-                                            {b.task?.nomenclature?.name} <span className="text-xs text-neutral-500">[{b.task?.nomenclature?.code}]</span>
+                                        <td className="p-2 sm:p-3 font-mono font-bold text-neutral-300 text-[10px] sm:text-sm">{b.batchNumber}</td>
+                                        <td className="p-2 sm:p-3 text-neutral-500 text-[10px] hidden sm:table-cell">{new Date(b.createdAt).toLocaleString()}</td>
+                                        <td className="p-2 sm:p-3 bg-neutral-900/40 text-[10px] sm:text-sm">
+                                            {b.task?.nomenclature?.name} <span className="text-[8px] sm:text-xs text-neutral-500 block sm:inline">[{b.task?.nomenclature?.code}]</span>
                                         </td>
-                                        <td className="p-3 font-bold text-white">
+                                        <td className="p-2 sm:p-3 font-bold text-white text-xs sm:text-sm">
                                             {b.completedQuantity} шт
                                         </td>
-                                        <td className="p-3 hidden md:table-cell text-xs text-neutral-400">
+                                        <td className="p-2 sm:p-3 hidden md:table-cell text-[10px] sm:text-xs text-neutral-400">
                                             <div>Плавок: <span className="text-white">{b.meltsCount || 1}</span></div>
                                             {b.pouringTemp && <div>Tзалив: {b.pouringTemp}°C</div>}
                                             {b.moldTemp && <div>Tформ: {b.moldTemp}°C</div>}
                                         </td>
-                                        <td className="p-3">
+                                        <td className="p-2 sm:p-3 text-[10px] sm:text-xs">
                                             {!isInspected ? (
-                                                <span className="text-yellow-500 font-bold bg-yellow-900/20 px-2 py-1 rounded">Ожидает проверки</span>
+                                                <span className="text-yellow-500 font-bold bg-yellow-900/20 px-1 sm:px-2 py-0.5 sm:py-1 rounded text-[8px] sm:text-xs text-center block sm:inline">Ожидает проверки</span>
                                             ) : (
                                                 <div className="text-xs space-y-1">
                                                     <div className="text-green-400 font-bold">Принято: {qc.acceptedQty}</div>

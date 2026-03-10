@@ -218,13 +218,13 @@ export default function MasterDashboard() {
                     <div className="overflow-x-auto">
                         <table className="w-full text-left border-collapse text-sm">
                             <thead>
-                                <tr className="bg-neutral-900/50 text-neutral-400 border-b border-neutral-700 text-xs">
-                                    <th className="p-3">Дата / Приоритет</th>
-                                    <th className="p-3">ДСП</th>
-                                    <th className="p-3">Метод</th>
-                                    <th className="p-3 text-right">План (шт)</th>
-                                    <th className="p-3 text-right">Выдано в работу (шт)</th>
-                                    <th className="p-3 text-center">Действия</th>
+                                <tr className="bg-neutral-900/50 text-neutral-400 border-b border-neutral-700 text-[10px] sm:text-xs">
+                                    <th className="p-2 sm:p-3">Дата / Приоритет</th>
+                                    <th className="p-2 sm:p-3">ДСП</th>
+                                    <th className="p-2 sm:p-3">Метод</th>
+                                    <th className="p-2 sm:p-3 text-right">План (шт)</th>
+                                    <th className="p-2 sm:p-3 text-right hidden sm:table-cell">Выдано в работу (шт)</th>
+                                    <th className="p-2 sm:p-3 text-center">Действия</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -233,24 +233,24 @@ export default function MasterDashboard() {
                                     const issuedQuantity = issuedTasks.reduce((acc, t) => acc + t.quantity, 0);
                                     return (
                                         <tr key={p.id} className="border-b border-neutral-700/50 hover:bg-neutral-750 transition-colors">
-                                            <td className="p-3">
+                                            <td className="p-2 sm:p-3">
                                                 <div className="font-bold text-neutral-200">{new Date(p.planDate).toLocaleDateString()}</div>
-                                                <div className={`text-[10px] font-bold uppercase ${p.priority === 3 ? 'text-red-400' : p.priority === 2 ? 'text-yellow-400' : 'text-neutral-500'}`}>
+                                                <div className={`text-[9px] sm:text-[10px] font-bold uppercase ${p.priority === 3 ? 'text-red-400' : p.priority === 2 ? 'text-yellow-400' : 'text-neutral-500'}`}>
                                                     {p.priority === 3 ? 'СРОЧНО' : p.priority === 2 ? 'ВЫСОКИЙ' : 'Обычный'}
                                                 </div>
                                             </td>
-                                            <td className="p-3">
-                                                <div className="font-bold flex items-center gap-1"><Package size={14} className="text-blue-400" /> {p.nomenclature.code}</div>
-                                                <div className="text-xs text-neutral-400">{p.nomenclature.name}</div>
+                                            <td className="p-2 sm:p-3">
+                                                <div className="font-bold flex items-center gap-1 text-xs sm:text-sm"><Package size={14} className="text-blue-400 hidden sm:block" /> {p.nomenclature.code}</div>
+                                                <div className="text-[10px] sm:text-xs text-neutral-400 hidden sm:block">{p.nomenclature.name}</div>
                                             </td>
-                                            <td className="p-3">
-                                                <div className="inline-block px-2 py-0.5 rounded text-[10px] font-bold bg-purple-900/50 text-purple-200 border border-purple-700/50">{p.method.name}</div>
+                                            <td className="p-2 sm:p-3">
+                                                <div className="inline-block px-1.5 sm:px-2 py-0.5 rounded text-[8px] sm:text-[10px] font-bold bg-purple-900/50 text-purple-200 border border-purple-700/50">{p.method.name}</div>
                                             </td>
-                                            <td className="p-3 text-right font-mono font-bold text-white text-lg">{p.plannedQuantity}</td>
-                                            <td className="p-3 text-right font-mono font-bold text-green-400 text-lg">{issuedQuantity}</td>
-                                            <td className="p-3 text-center space-x-2">
-                                                <button onClick={() => { setIssuePlanId(p.id); setIssueQuantity((p.plannedQuantity - issuedQuantity).toString()); }} className="bg-green-600 hover:bg-green-500 text-white px-3 py-1 rounded text-xs font-bold transition-colors">Выдать задачу</button>
-                                                <button onClick={() => handleDeletePlan(p.id)} className="text-red-500 hover:text-red-400 underline text-xs">Удалить</button>
+                                            <td className="p-2 sm:p-3 text-right font-mono font-bold text-white text-sm sm:text-lg">{p.plannedQuantity}</td>
+                                            <td className="p-2 sm:p-3 text-right font-mono font-bold text-green-400 text-sm sm:text-lg hidden sm:table-cell">{issuedQuantity}</td>
+                                            <td className="p-2 sm:p-3 text-center space-y-1 sm:space-y-0 sm:space-x-2 flex flex-col sm:flex-row items-center justify-center">
+                                                <button onClick={() => { setIssuePlanId(p.id); setIssueQuantity((p.plannedQuantity - issuedQuantity).toString()); }} className="bg-green-600 hover:bg-green-500 text-white px-2 sm:px-3 py-1 rounded text-[10px] sm:text-xs font-bold transition-colors w-full sm:w-auto">Выдать</button>
+                                                <button onClick={() => handleDeletePlan(p.id)} className="text-red-500 hover:text-red-400 underline text-[10px] sm:text-xs w-full sm:w-auto">Удалить</button>
                                             </td>
                                         </tr>
                                     );
@@ -308,45 +308,48 @@ export default function MasterDashboard() {
                 <div className="overflow-x-auto">
                     <table className="w-full text-left border-collapse text-sm">
                         <thead>
-                            <tr className="bg-neutral-900/50 text-neutral-400 border-b border-neutral-700 text-xs text-center">
-                                <th className="p-3 text-left">Заказ наряд / Дата</th>
-                                <th className="p-3 text-left">Деталь</th>
-                                <th className="p-3">Метод / Кол-во</th>
-                                <th className="p-3">Исполнитель</th>
-                                <th className="p-3">Статус</th>
-                                <th className="p-3 text-right">Действия</th>
+                            <tr className="bg-neutral-900/50 text-neutral-400 border-b border-neutral-700 text-[10px] sm:text-xs text-center">
+                                <th className="p-2 sm:p-3 text-left">Заказ наряд / Дата</th>
+                                <th className="p-2 sm:p-3 text-left">Деталь</th>
+                                <th className="p-2 sm:p-3 hidden sm:table-cell">Метод / Кол-во</th>
+                                <th className="p-2 sm:p-3">Исполнитель</th>
+                                <th className="p-2 sm:p-3">Статус</th>
+                                <th className="p-2 sm:p-3 text-right hidden sm:table-cell">Действия</th>
                             </tr>
                         </thead>
                         <tbody>
                             {tasks.map(t => (
                                 <tr key={t.id} className="border-b border-neutral-700/50 hover:bg-neutral-750 transition-colors text-center">
-                                    <td className="p-3 text-left">
-                                        <div className="font-mono text-xs font-bold text-neutral-300">{t.taskNumber}</div>
-                                        <div className="text-[10px] text-neutral-500">{new Date(t.createdAt).toLocaleDateString()}</div>
+                                    <td className="p-2 sm:p-3 text-left">
+                                        <div className="font-mono text-[10px] sm:text-xs font-bold text-neutral-300 break-all">{t.taskNumber}</div>
+                                        <div className="text-[8px] sm:text-[10px] text-neutral-500">{new Date(t.createdAt).toLocaleDateString()}</div>
                                     </td>
-                                    <td className="p-3 text-left">
-                                        <div className="font-bold flex items-center gap-1"><Package size={14} className="text-blue-400" /> {t.nomenclature.code}</div>
-                                        <div className="text-[10px] text-neutral-400 max-w-[150px] truncate" title={t.nomenclature.name}>{t.nomenclature.name}</div>
+                                    <td className="p-2 sm:p-3 text-left">
+                                        <div className="font-bold flex items-center gap-1 text-[10px] sm:text-sm"><Package size={14} className="text-blue-400 hidden sm:block" /> {t.nomenclature.code}</div>
+                                        <div className="text-[8px] sm:text-[10px] text-neutral-400 max-w-[100px] sm:max-w-[150px] truncate" title={t.nomenclature.name}>{t.nomenclature.name}</div>
+                                        <div className="sm:hidden mt-1">
+                                            <span className="font-mono font-bold text-green-400 text-[10px]">{t.quantity} шт</span>
+                                        </div>
                                     </td>
-                                    <td className="p-3">
-                                        <div className="inline-block px-2 py-0.5 rounded text-[10px] font-bold bg-purple-900/50 text-purple-200 border border-purple-700/50 mb-1 uppercase tracking-wider">{t.method.name}</div>
+                                    <td className="p-2 sm:p-3 hidden sm:table-cell">
+                                        <div className="inline-block px-1.5 sm:px-2 py-0.5 rounded text-[8px] sm:text-[10px] font-bold bg-purple-900/50 text-purple-200 border border-purple-700/50 mb-1 uppercase tracking-wider">{t.method.name}</div>
                                         <div><span className="font-mono font-bold text-green-400">{t.quantity} шт</span></div>
                                     </td>
-                                    <td className="p-3">
+                                    <td className="p-2 sm:p-3">
                                         <select
                                             value={t.assignedUser?.id || ''}
                                             onChange={(e) => handleAssignUser(t.id, e.target.value)}
-                                            className="bg-neutral-900 border border-neutral-700 rounded p-1.5 text-xs text-white outline-none w-32 focus:border-blue-500 transition-colors"
+                                            className="bg-neutral-900 border border-neutral-700 rounded p-1 sm:p-1.5 text-[10px] sm:text-xs text-white outline-none w-20 sm:w-32 focus:border-blue-500 transition-colors"
                                         >
-                                            <option value="">- Не назначен -</option>
-                                            {workers.map(w => <option key={w.id} value={w.id}>{w.fullName.split(' ')[0]} ({w.role})</option>)}
+                                            <option value="">- Нет -</option>
+                                            {workers.map(w => <option key={w.id} value={w.id}>{w.fullName.split(' ')[0]}</option>)}
                                         </select>
                                     </td>
-                                    <td className="p-3">
+                                    <td className="p-2 sm:p-3">
                                         <select
                                             value={t.status}
                                             onChange={(e) => handleStatusChange(t.id, e.target.value)}
-                                            className={`px-2 py-1 rounded text-[10px] font-bold outline-none border transition-colors uppercase
+                                            className={`px-1 sm:px-2 py-1 rounded text-[8px] sm:text-[10px] font-bold outline-none border transition-colors uppercase w-full sm:w-auto
                                                 ${t.status === 'DONE' ? 'bg-green-900/30 text-green-400 border-green-700/50' :
                                                     t.status === 'IN_PROGRESS' ? 'bg-yellow-900/30 text-yellow-400 border-yellow-700/50' :
                                                         'bg-neutral-900 text-neutral-300 border-neutral-600'}
@@ -356,8 +359,11 @@ export default function MasterDashboard() {
                                             <option value="IN_PROGRESS">В РАБОТЕ</option>
                                             <option value="DONE">ЗАВЕРШЕНО</option>
                                         </select>
+                                        <div className="sm:hidden mt-2 flex justify-center">
+                                            <button onClick={() => handleDeleteTask(t.id)} className="text-red-500 hover:text-red-400 text-[10px] font-medium underline uppercase tracking-wider">Удал.</button>
+                                        </div>
                                     </td>
-                                    <td className="p-3 text-right">
+                                    <td className="p-3 text-right hidden sm:table-cell">
                                         <button onClick={() => handleDeleteTask(t.id)} className="text-red-500 hover:text-red-400 text-[10px] font-medium underline uppercase tracking-wider">Удалить</button>
                                     </td>
                                 </tr>

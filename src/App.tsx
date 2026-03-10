@@ -147,8 +147,8 @@ function MainLayout() {
                     } as any)[user.role] || user.role} {user.department ? `· ${user.department}` : ''}
                   </div>
                 </div>
-                <div className="h-9 w-9 rounded-full bg-neutral-700 flex items-center justify-center text-neutral-400 shrink-0 border border-neutral-600">
-                  <UserIcon size={18} />
+                <div className="h-8 w-8 sm:h-9 sm:w-9 rounded-full bg-neutral-700 flex items-center justify-center text-neutral-400 shrink-0 border border-neutral-600">
+                  <UserIcon size={16} className="sm:w-[18px] sm:h-[18px]" />
                 </div>
                 
                 {/* 
@@ -158,11 +158,11 @@ function MainLayout() {
                 */}
                 {(originalRole === 'DEMO' || user.role === 'DEMO' || user.login === 'demo' || user.id === -1) && (
                   <div className="flex items-center gap-2 mr-4 group/selector">
-                    <div className="relative group">
+                    <div className="relative group z-50">
                       <select 
                         value={simulatedRole || 'DEMO'} 
                         onChange={(e) => setSimulatedRole(e.target.value === 'DEMO' ? null : e.target.value)}
-                        className={`bg-neutral-800 border-2 ${!simulatedRole ? 'border-red-600/50 animate-pulse' : 'border-neutral-700'} text-white text-[10px] font-bold py-1.5 px-3 rounded-lg focus:outline-none focus:ring-1 focus:ring-red-500 uppercase tracking-tighter cursor-pointer hover:border-red-500 transition-all`}
+                        className={`bg-neutral-800 border-2 ${!simulatedRole ? 'border-red-600/50 animate-pulse' : 'border-neutral-700'} text-white text-[9px] sm:text-[10px] font-bold py-1 sm:py-1.5 px-1.5 sm:px-3 max-w-[100px] sm:max-w-none rounded-lg focus:outline-none focus:ring-1 focus:ring-red-500 uppercase tracking-tighter cursor-pointer hover:border-red-500 transition-all`}
                         title="Сменить роль для ознакомления"
                       >
                         <option value="DEMO">Режим: Обзор</option>
@@ -186,10 +186,11 @@ function MainLayout() {
                 {(originalRole === 'DEMO' || user.role === 'DEMO' || user.login === 'demo' || user.id === -1) && (
                   <button 
                     onClick={() => setShowDemoTour(true)}
-                    className="flex items-center gap-2 px-3 py-1.5 bg-yellow-500/10 text-yellow-500 border border-yellow-500/30 rounded-lg text-xs font-bold hover:bg-yellow-500/20 transition-all uppercase tracking-tighter"
+                    className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 bg-yellow-500/10 text-yellow-500 border border-yellow-500/30 rounded-lg text-[10px] sm:text-xs font-bold hover:bg-yellow-500/20 transition-all uppercase tracking-tighter"
                   >
-                    <Play size={12} fill="currentColor" />
-                    Тур
+                    <Play size={10} fill="currentColor" className="sm:w-3 sm:h-3" />
+                    <span className="hidden sm:inline">Презентация</span>
+                    <span className="sm:hidden">През.</span>
                   </button>
                 )}
 
@@ -223,10 +224,10 @@ function MainLayout() {
                 </a>
                 <button
                   onClick={logout}
-                  className="p-2 rounded-lg text-neutral-400 hover:text-red-400 hover:bg-neutral-800 flex items-center gap-2 transition-colors"
+                  className="p-1 sm:p-2 rounded-lg text-neutral-400 hover:text-red-400 hover:bg-neutral-800 flex items-center gap-2 transition-colors"
                   title="Выход"
                 >
-                  <LogOut size={18} />
+                  <LogOut size={16} className="sm:w-[18px] sm:h-[18px]" />
                   <span className="hidden sm:inline-block text-sm font-medium">Выйти</span>
                 </button>
               </div>

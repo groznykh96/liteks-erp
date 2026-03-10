@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { authenticateToken } from '../middlewares/authMiddleware';
 import prisma from '../db';
+import { DemoService } from '../services/demoService';
 
 const router = Router();
 router.use(authenticateToken);
@@ -29,6 +30,9 @@ const INCLUDE_FULL = {
 // GET /api/orders — list orders based on role
 router.get('/', async (req: Request, res: Response) => {
     const currentUser = (req as any).user;
+    if (currentUser.role === 'DEMO') {
+        return res.json(DemoService.getMockOrders());
+    }
     try {
         const where: any = {};
         if (currentUser.role === 'SALES') {

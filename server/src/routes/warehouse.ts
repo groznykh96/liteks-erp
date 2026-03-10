@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { authenticateToken } from '../middlewares/authMiddleware';
 import prisma from '../db';
+import { DemoService } from '../services/demoService';
 
 const router = Router();
 router.use(authenticateToken);
@@ -10,8 +11,12 @@ const isWarehouseStaff = (role: string) => ['TMC', 'STOREKEEPER', 'ADMIN', 'DIRE
 
 // 1. Get current inventory
 router.get('/inventory', async (req: Request, res: Response) => {
+    const user = (req as any).user;
+    if (user.role === 'DEMO') {
+        return res.json(DemoService.getMockInventory());
+    }
     try {
-        const userRole = (req as any).user?.role;
+        const userRole = user?.role;
         if (!isWarehouseStaff(userRole)) {
             return res.status(403).json({ error: 'Доступ запрещен' });
         }

@@ -80,9 +80,38 @@ const Login: React.FC = () => {
                     >
                         ВОЙТИ В СИСТЕМУ
                     </button>
+                    
+                    <div className="relative flex items-center py-2 mt-4">
+                        <div className="flex-grow border-t border-white/20"></div>
+                        <span className="flex-shrink-0 mx-4 text-white/50 text-xs uppercase tracking-wider font-bold">ИЛИ</span>
+                        <div className="flex-grow border-t border-white/20"></div>
+                    </div>
+                    
+                    <button
+                        type="button"
+                        onClick={async (e) => {
+                            e.preventDefault();
+                            setError('');
+                            try {
+                                const response = await axios.post(`${API_URL}/auth/login`, {
+                                    login: 'demo',
+                                    password: 'demo'
+                                });
+                                const { token, user } = response.data;
+                                login(token, user);
+                                navigate('/');
+                            } catch (err: any) {
+                                setError(err.response?.data?.error || 'Ошибка входа в Демо-режим. Обратитесь к администратору.');
+                            }
+                        }}
+                        className="w-full bg-neutral-800/80 hover:bg-neutral-700/80 border border-neutral-600 text-white font-bold py-3 px-4 rounded-xl flex items-center justify-center gap-2 shadow-lg transition-all transform active:scale-[0.98]"
+                    >
+                        <span className="text-xl">🚀</span> ВОЙТИ В ДЕМО-РЕЖИМ
+                    </button>
                 </form>
             </div>
         </div>
+
     );
 };
 

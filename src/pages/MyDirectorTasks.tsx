@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { api } from '../api';
 import { useAuth } from '../contexts/AuthContext';
 import { ClipboardCheck, MessageCircle, CheckCircle, Clock, X, SendHorizonal } from 'lucide-react';
+import { useNotifications } from '../contexts/NotificationContext';
 
 interface Comment { id: number; text: string; createdAt: string; author: { fullName: string; role: string }; }
 interface DTask {
@@ -35,6 +36,7 @@ export default function MyDirectorTasks() {
     const [selected, setSelected] = useState<DTask | null>(null);
     const [commentText, setCommentText] = useState('');
     const [loading, setLoading] = useState(true);
+    const { showNotification, refreshCounts } = useNotifications();
 
     const load = async () => {
         setLoading(true);
@@ -55,8 +57,10 @@ export default function MyDirectorTasks() {
     const handleStatusChange = async (taskId: number, status: string) => {
         try {
             await api.updateDirectorTask(taskId, { status });
-            load();
-        } catch { alert('Ошибка смены статуса'); }
+            showNotification('Статус задачи обновлен', 'success');
+            await load();
+            await refreshCounts();
+        } catch { showNotification('Ошибка смены статуса', 'error'); }
     };
 
     const handleAddComment = async () => {
@@ -65,7 +69,7 @@ export default function MyDirectorTasks() {
             await api.addDirectorTaskComment(selected.id, commentText);
             setCommentText('');
             load();
-        } catch { alert('Ошибка отправки'); }
+        } catch { showNotification('Ошибка отправки сообщения', 'error'); }
     };
 
     const priColors = ['border-neutral-700', 'border-yellow-700/60', 'border-red-700/60'];

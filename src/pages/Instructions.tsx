@@ -71,14 +71,15 @@ function MarkdownRenderer({ text }: { text: string }) {
 const ROLE_COLORS: Record<string, string> = {
     WORKER: 'text-orange-400',
     MASTER: 'text-blue-400',
-    OTK: 'text-purple-400',
+    OTC: 'text-purple-400',
     DIRECTOR: 'text-emerald-400',
-    TECH: 'text-teal-400',
+    TECHNOLOGIST: 'text-teal-400',
     SALES: 'text-orange-300',
     ADMIN: 'text-red-400',
     TMC: 'text-indigo-400',
     STOREKEEPER: 'text-yellow-400',
     TRAINER: 'text-pink-400',
+    DEMO: 'text-yellow-500',
 };
 
 export default function Instructions() {
@@ -89,7 +90,7 @@ export default function Instructions() {
 
     useEffect(() => {
         if (!user) return;
-        const roleKey = user.role === 'OTC' ? 'OTK' : (user.role === 'TECHNOLOGIST' ? 'TECH' : user.role);
+        const roleKey = user.role;
         const token = localStorage.getItem('token');
 
         fetch(`${API_BASE}/instructions/${roleKey}`, {

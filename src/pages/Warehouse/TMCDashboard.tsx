@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../../api';
 import { Package, Truck, Calculator, MapPin, Plus, Calendar, UserCheck, Check } from 'lucide-react';
+import { useNotifications } from '../../contexts/NotificationContext';
 
 export default function TMCDashboard() {
+    const { showNotification } = useNotifications();
     const [activeTab, setActiveTab] = useState<'inventory' | 'shipping' | 'registry' | 'salary'>('inventory');
 
     return (
@@ -46,8 +48,8 @@ export default function TMCDashboard() {
             </div>
 
             <div className="bg-neutral-800 rounded-xl border border-neutral-700/50 p-6 shadow-sm min-h-[500px]">
-                {activeTab === 'inventory' && <InventoryTab />}
-                {activeTab === 'shipping' && <ShippingTab />}
+                {activeTab === 'inventory' && <InventoryTab showNotification={showNotification} />}
+                {activeTab === 'shipping' && <ShippingTab showNotification={showNotification} confirm={confirm} />}
                 {activeTab === 'registry' && <RegistryTab />}
                 {activeTab === 'salary' && <SalaryTab />}
             </div>
@@ -56,7 +58,7 @@ export default function TMCDashboard() {
 }
 
 // --- 1. INVENTORY TAB ---
-function InventoryTab() {
+function InventoryTab({ showNotification }: { showNotification: any }) {
     const [inventory, setInventory] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -77,7 +79,7 @@ function InventoryTab() {
     }, []);
 
     const handlePrintQR = (item: any) => {
-        alert(`Печать QR кода для ${item.nomenclature.name} (Партия: ${item.batch?.batchNumber || 'Н/Д'})\nАдрес: ${item.location}`);
+        showNotification(`Печать QR кода для ${item.nomenclature.name} (Партия: ${item.batch?.batchNumber || 'Н/Д'}) Адрес: ${item.location}`, 'info');
     };
 
     return (
@@ -145,7 +147,7 @@ function InventoryTab() {
 }
 
 // --- 2. SHIPPING TAB ---
-function ShippingTab() {
+function ShippingTab({ showNotification, confirm }: { showNotification: any, confirm: any }) {
     const [orders, setOrders] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [isCreating, setIsCreating] = useState(false);
@@ -207,8 +209,9 @@ function ShippingTab() {
             setIsCreating(false);
             setNewOrder({ orderId: '', notes: '', assignedToId: '', items: [] });
             loadOrders();
+            showNotification('Задание успешно создано', 'success');
         } catch (e: any) {
-            alert(e.message || e.response?.data?.error || 'Ошибка создания задания');
+            showNotification(e.message || e.response?.data?.error || 'Ошибка создания задания', 'error');
         }
     };
 
@@ -216,8 +219,9 @@ function ShippingTab() {
         try {
             await api.confirmShippingOrder(id);
             loadOrders();
+            showNotification('Задание подтверждено', 'success');
         } catch (e: any) {
-            alert(e.response?.data?.error || 'Ошибка подтверждения');
+            showNotification(e.response?.data?.error || 'Ошибка подтверждения', 'error');
         }
     };
 
@@ -241,10 +245,10 @@ function ShippingTab() {
         if (!confirm('Вы уверены, что хотите списать эту отгрузку со склада (OUTCOME)? Это действие нельзя отменить.')) return;
         try {
             await api.shipShippingOrder(id);
-            alert('Успешно отгружено!');
+            showNotification('Успешно отгружено!', 'success');
             loadOrders();
         } catch (e: any) {
-            alert(e.response?.data?.error || 'Ошибка отгрузки');
+            showNotification(e.response?.data?.error || 'Ошибка отгрузки', 'error');
         }
     };
 

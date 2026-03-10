@@ -495,9 +495,20 @@ model OrderComment {
 // Editable instructions per role
 model InstructionPage {
   id        Int      @id @default(autoincrement())
-  roleKey   String   @unique // 'WORKER', 'MASTER', 'OTK', 'DIRECTOR', 'TECH', 'ADMIN', 'SALES'
+  roleKey   String   @unique // 'WORKER', 'MASTER', 'OTC', 'DIRECTOR', 'TECHNOLOGIST', 'ADMIN', 'SALES', 'DEMO'
   title     String
   content   String // markdown / HTML text
+  updatedAt DateTime @updatedAt
+}
+
+// Onboarding slides for Demo users
+model DemoSlide {
+  id        Int      @id @default(autoincrement())
+  title     String
+  content   String
+  imageUrl  String?
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 

@@ -1,15 +1,16 @@
-import { Router, Request, Response } from 'express';
-import { authenticateToken } from '../middlewares/authMiddleware';
-import prisma from '../db';
+import { DemoService } from '../services/demoService';
 
 const router = Router();
 router.use(authenticateToken);
 
-const isTMC = (role: string) => ['TMC', 'ADMIN', 'DIRECTOR'].includes(role);
+const isTMC = (role: string) => ['TMC', 'ADMIN', 'DIRECTOR', 'DEMO'].includes(role);
 
 // 1. Production report for salary calculation
 router.get('/report', async (req: Request, res: Response) => {
     try {
+        if ((req as any).user?.role === 'DEMO') {
+            return res.json(DemoService.getMockSalary());
+        }
         const user = (req as any).user;
         if (!isTMC(user.role)) return res.status(403).json({ error: 'Только специалист ТМЦ может просматривать отчет по зарплате' });
 

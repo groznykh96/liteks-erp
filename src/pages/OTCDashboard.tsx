@@ -3,6 +3,7 @@ import { api } from '../api';
 import { useAuth } from '../contexts/AuthContext';
 import { ShieldCheck, Check, X, Package, FileImage, Download, RefreshCcw } from 'lucide-react';
 import * as XLSX from 'xlsx';
+import { useNotifications } from '../contexts/NotificationContext';
 
 interface Nomenclature { code: string; name: string; }
 interface Task {
@@ -32,6 +33,7 @@ interface QCReport {
 
 export default function OTCDashboard() {
     const { user } = useAuth();
+    const { showNotification } = useNotifications();
     const [batches, setBatches] = useState<Batch[]>([]);
     const [reports, setReports] = useState<QCReport[]>([]);
     const [loading, setLoading] = useState(true);
@@ -68,7 +70,7 @@ export default function OTCDashboard() {
 
     const handleExportExcel = async () => {
         if (reports.length === 0) {
-            alert('Нет данных для выгрузки');
+            showNotification('Нет данных для выгрузки', 'warning');
             return;
         }
 
@@ -97,18 +99,18 @@ export default function OTCDashboard() {
                 const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
                 const result = await electronApi.saveExcelFile(Array.from(wbout), fileName);
                 if (result?.success) {
-                    alert(`Файл успешно сохранён:\n${result.filePath}`);
+                    showNotification(`Файл успешно сохранён: ${result.filePath}`, 'success');
                 } else if (result?.canceled) {
                     console.log('Сохранение отменено пользователем');
                 } else {
-                    alert('Файл сохранен (без детальной информации о пути)');
+                    showNotification('Файл сохранен (без детальной информации о пути)', 'info');
                 }
             } else {
                 XLSX.writeFile(wb, fileName);
             }
         } catch (e) {
             console.error('Ошибка выгрузки Excel:', e);
-            alert('Ошибка при сохранении файла Excel!');
+            showNotification('Ошибка при сохранении файла Excel!', 'error');
         } finally {
             setExporting(false);
         }
@@ -140,9 +142,9 @@ export default function OTCDashboard() {
             setComment('');
             setGuiltyWorkerId('');
             setPhotoUrl('');
-            alert('Партия успешно проверена!');
+            showNotification('Партия успешно проверена!', 'success');
         } catch (e) {
-            alert('Ошибка сохранения проверки');
+            showNotification('Ошибка сохранения проверки', 'error');
         }
     };
 

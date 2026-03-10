@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { api } from '../api';
 import { useAuth } from '../contexts/AuthContext';
 import { ClipboardList, Plus, Package, ArrowRight } from 'lucide-react';
-import ConfirmModal from '../components/UI/ConfirmModal';
+import { useNotifications } from '../contexts/NotificationContext';
 
 interface Nomenclature { id: number; name: string; code: string; }
 interface CastingMethod { id: number; name: string; }
@@ -47,7 +47,7 @@ export default function MasterDashboard() {
     const [issuePlanId, setIssuePlanId] = useState<number | null>(null);
     const [issueQuantity, setIssueQuantity] = useState('');
     const [issueWorkerId, setIssueWorkerId] = useState('');
-    const [deleteConfirm, setDeleteConfirm] = useState<{ id: number; type: 'plan' | 'task' } | null>(null);
+    const { showNotification, confirm } = useNotifications();
 
     const fetchData = async () => {
         try {
@@ -85,13 +85,20 @@ export default function MasterDashboard() {
             });
             fetchData();
             setPlannedQuantity('');
-            alert('Добавлено в производственный план');
+            showNotification('Добавлено в производственный план', 'success');
         } catch (e) {
-            alert('Ошибка добавления плана');
+            showNotification('Ошибка добавления плана', 'error');
         }
     };
 
-    const handleDeletePlan = (id: number) => setDeleteConfirm({ id, type: 'plan' });
+    const handleDeletePlan = async (id: number) => {
+        if (!await confirm({ message: 'Уверены, что хотите удалить пункт плана?', type: 'danger' })) return;
+        try {
+            await api.deletePlan(id);
+            fetchData();
+            showNotification('Пункт плана удален', 'success');
+        } catch { showNotification('Ошибка удаления', 'error'); }
+    };
 
     const handleIssueTask = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -111,9 +118,9 @@ export default function MasterDashboard() {
             setIssuePlanId(null);
             setIssueQuantity('');
             setIssueWorkerId('');
-            alert('Задача успешно выдана');
+            showNotification('Задача успешно выдана', 'success');
         } catch (e) {
-            alert('Ошибка создания задачи');
+            showNotification('Ошибка создания задачи', 'error');
         }
     };
 
@@ -124,7 +131,7 @@ export default function MasterDashboard() {
             });
             fetchData();
         } catch (e) {
-            alert('Ошибка назначения');
+            showNotification('Ошибка назначения', 'error');
         }
     };
 
@@ -133,27 +140,20 @@ export default function MasterDashboard() {
             await api.updateTask(taskId, { status: newStatus });
             fetchData();
         } catch (e) {
-            alert('Ошибка изменения статуса');
+            showNotification('Ошибка изменения статуса', 'error');
         }
     };
 
-    const handleDeleteTask = (id: number) => setDeleteConfirm({ id, type: 'task' });
-
-    const executeDelete = async () => {
-        if (!deleteConfirm) return;
+    const handleDeleteTask = async (id: number) => {
+        if (!await confirm({ message: 'Уверены, что хотите удалить задачу?', type: 'danger' })) return;
         try {
-            if (deleteConfirm.type === 'plan') {
-                await api.deletePlan(deleteConfirm.id);
-            } else {
-                await api.deleteTask(deleteConfirm.id);
-            }
+            await api.deleteTask(id);
             fetchData();
-        } catch (e) {
-            alert('Ошибка удаления');
-        } finally {
-            setDeleteConfirm(null);
-        }
+            showNotification('Задача удалена', 'success');
+        } catch { showNotification('Ошибка удаления', 'error'); }
     };
+
+    // Replaced executeDelete with direct handle functions
 
     if (user?.role !== 'MASTER' && user?.role !== 'ADMIN' && user?.role !== 'DIRECTOR') {
         return <div className="p-8 text-center text-red-500 font-bold">У вас нет прав для просмотра производственного плана</div>;
@@ -370,13 +370,7 @@ export default function MasterDashboard() {
                 </div>
             </div>
 
-            <ConfirmModal
-                isOpen={!!deleteConfirm}
-                title="Удаление"
-                message={deleteConfirm?.type === 'plan' ? 'Уверены, что хотите удалить пункт плана?' : 'Уверены, что хотите удалить задачу?'}
-                onConfirm={executeDelete}
-                onCancel={() => setDeleteConfirm(null)}
-            />
+            {/* Removed legacy deleteConfirm Modal */}
         </div>
     );
 }

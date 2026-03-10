@@ -5,6 +5,7 @@ import {
     ShoppingCart, Plus, Trash2, MessageCircle, X, CheckCircle,
     Clock, Package, AlertTriangle, Send, ChevronDown, ChevronUp
 } from 'lucide-react';
+import { useNotifications } from '../contexts/NotificationContext';
 
 interface OrderItem {
     id?: number;
@@ -71,6 +72,7 @@ const EMPTY_FORM = { clientName: '', clientPhone: '', clientEmail: '', notes: ''
 
 export default function SalesDashboard() {
     const { user } = useAuth();
+    const { showNotification, confirm } = useNotifications();
     const [orders, setOrders] = useState<Order[]>([]);
     const [selected, setSelected] = useState<Order | null>(null);
     const [showCreate, setShowCreate] = useState(false);
@@ -96,34 +98,37 @@ export default function SalesDashboard() {
 
     const handleCreate = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!form.clientName || !form.deadline) return alert('Заполните Клиент и Срок');
-        if (items.some(it => !it.itemName || !it.quantity)) return alert('Заполните позиции заказа');
+        if (!form.clientName || !form.deadline) return showNotification('Заполните Клиент и Срок', 'warning');
+        if (items.some(it => !it.itemName || !it.quantity)) return showNotification('Заполните позиции заказа', 'warning');
         try {
             await api.createOrder({ ...form, totalAmount: form.totalAmount ? Number(form.totalAmount) : null, items });
             setShowCreate(false);
             setForm(EMPTY_FORM);
             setItems([{ itemName: '', quantity: 1 }]);
             load();
+            showNotification('Заказ успешно создан', 'success');
         } catch (e: any) {
-            alert(e?.response?.data?.error || 'Ошибка создания заказа');
+            showNotification(e?.response?.data?.error || 'Ошибка создания заказа', 'error');
         }
     };
 
     const handleShip = async (orderId: number) => {
-        if (!confirm('Отметить заказ как отгруженный?')) return;
+        if (!await confirm({ message: 'Отметить заказ как отгруженный?', confirmText: 'Отгрузить' })) return;
         try {
             await api.updateOrder(orderId, { status: 'SHIPPED' });
             load();
-        } catch { alert('Ошибка'); }
+            showNotification('Заказ отгружен', 'success');
+        } catch { showNotification('Ошибка', 'error'); }
     };
 
     const handleDelete = async (orderId: number) => {
-        if (!confirm('Удалить заказ? Это действие необратимо.')) return;
+        if (!await confirm({ message: 'Удалить заказ? Это действие необратимо.', type: 'danger', confirmText: 'Удалить' })) return;
         try {
             await api.deleteOrder(orderId);
             if (selected?.id === orderId) setSelected(null);
             load();
-        } catch { alert('Ошибка удаления'); }
+            showNotification('Заказ удален', 'success');
+        } catch { showNotification('Ошибка удаления', 'error'); }
     };
 
     const handleComment = async () => {
@@ -132,7 +137,7 @@ export default function SalesDashboard() {
             await api.addOrderComment(selected.id, commentText);
             setCommentText('');
             load();
-        } catch { alert('Ошибка'); }
+        } catch { showNotification('Ошибка отправки сообщения', 'error'); }
     };
 
     const isOverdue = (order: Order) =>

@@ -5,6 +5,7 @@ import {
     Users, Settings, Activity, ShieldCheck, PieChart, Menu, ChevronLeft, Briefcase, ClipboardCheck, ShoppingCart, BookOpen, LayoutGrid
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+import { useNotifications } from '../../contexts/NotificationContext';
 
 interface SidebarProps {
     isOpen: boolean;
@@ -13,15 +14,16 @@ interface SidebarProps {
 
 export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
     const { user } = useAuth();
+    const { unreadCounts } = useNotifications();
 
     if (!user) return null;
 
     const isWorker = ['WORKER', 'TRIMMER', 'POURER', 'MOULDER', 'KNOCKER', 'FINISHER'].includes(user.role);
-    const isOtk = user.role === 'OTK' || user.role === 'OTC';
+    const isOtk = user.role === 'OTC';
     const isAdmin = user.role === 'ADMIN';
     const isDirector = user.role === 'DIRECTOR';
     const isMaster = user.role === 'MASTER';
-    const isTech = user.role === 'TECH' || user.role === 'TECHNOLOGIST';
+    const isTech = user.role === 'TECHNOLOGIST';
     const isSales = user.role === 'SALES';
     const isTrainer = user.role === 'TRAINER';
     const isTMC = user.role === 'TMC';
@@ -104,7 +106,14 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
                                     )}
                                     {/* Director tasks — for non-sales production staff viewing their own assigned tasks */}
                                     <NavLink to="/my-director-tasks" className={navLinkClasses} title="Мои поручения">
-                                        <ClipboardCheck size={20} className="shrink-0" />
+                                        <div className="relative">
+                                            <ClipboardCheck size={20} className="shrink-0" />
+                                            {unreadCounts.tasks > 0 && (
+                                                <span className="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-600 text-[10px] font-bold text-white ring-2 ring-neutral-900 animate-pulse">
+                                                    {unreadCounts.tasks}
+                                                </span>
+                                            )}
+                                        </div>
                                         <span className={`transition-opacity duration-200 ${isOpen ? 'opacity-100' : 'lg:hidden'}`}>Мои поручения</span>
                                     </NavLink>
                                     {/* Issue tasks - specifically for Master to issue tasks to workers in his production group */}
@@ -195,7 +204,14 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
                                     <span className={`transition-opacity duration-200 ${isOpen ? 'opacity-100' : 'lg:hidden'}`}>Инструкции</span>
                                 </NavLink>
                                 <NavLink to="/training" className={navLinkClasses} title="Мое обучение">
-                                    <BookOpen size={20} className="shrink-0" />
+                                    <div className="relative">
+                                        <BookOpen size={20} className="shrink-0" />
+                                        {unreadCounts.training > 0 && (
+                                            <span className="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-600 text-[10px] font-bold text-white ring-2 ring-neutral-900 animate-pulse">
+                                                {unreadCounts.training}
+                                            </span>
+                                        )}
+                                    </div>
                                     <span className={`transition-opacity duration-200 ${isOpen ? 'opacity-100' : 'lg:hidden'}`}>Мое обучение</span>
                                 </NavLink>
                                 {(isAdmin || isDirector || isTrainer) && (
@@ -233,7 +249,14 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
                                     )}
                                     {/* Director Task System - for Director/Admin */}
                                     <NavLink to="/director-tasks" className={navLinkClasses} title="Задачи">
-                                        <ClipboardCheck size={20} className="shrink-0" />
+                                        <div className="relative">
+                                            <ClipboardCheck size={20} className="shrink-0" />
+                                            {unreadCounts.tasks > 0 && (
+                                                <span className="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-600 text-[10px] font-bold text-white ring-2 ring-neutral-900 animate-pulse">
+                                                    {unreadCounts.tasks}
+                                                </span>
+                                            )}
+                                        </div>
                                         <span className={`transition-opacity duration-200 ${isOpen ? 'opacity-100' : 'lg:hidden'}`}>Задачи сотрудникам</span>
                                     </NavLink>
                                 </div>

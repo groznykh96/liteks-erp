@@ -3,6 +3,9 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import { PrismaClient } from '@prisma/client';
 
+import { authenticateToken } from './middlewares/authMiddleware';
+import { demoGuard } from './middlewares/demoGuard';
+
 dotenv.config();
 
 import authRouter from './routes/auth';
@@ -47,7 +50,12 @@ app.use(cors({
 }));
 app.use(express.json());
 
+// Auth routes don't need demo guard
 app.use('/api/auth', authRouter);
+
+// Apply demo guard to all subsequent API routes
+app.use(demoGuard);
+
 app.use('/api/users', usersRouter);
 app.use('/api/departments', departmentsRouter);
 app.use('/api/tasks', tasksRouter);

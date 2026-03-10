@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../../api';
 import { PackageOpen, MapPin, Truck, Check } from 'lucide-react';
+import { useNotifications } from '../../contexts/NotificationContext';
 
 export default function StorekeeperDashboard() {
     const [activeTab, setActiveTab] = useState<'income' | 'picking'>('income');
@@ -46,6 +47,7 @@ function IncomeTab() {
     const [movingItem, setMovingItem] = useState<any>(null);
     const [newLocation, setNewLocation] = useState('');
     const [moveQty, setMoveQty] = useState<number>(0);
+    const { showNotification } = useNotifications();
 
     const [isAddingManually, setIsAddingManually] = useState(false);
     const [availableNomenclatures, setAvailableNomenclatures] = useState<any[]>([]);
@@ -87,9 +89,10 @@ function IncomeTab() {
             });
             setMovingItem(null);
             setNewLocation('');
+            showNotification('Перемещение успешно', 'success');
             loadInventory(); // reload
         } catch (e: any) {
-            alert(e.response?.data?.error || 'Ошибка перемещения');
+            showNotification(e.response?.data?.error || 'Ошибка перемещения', 'error');
         }
     };
 
@@ -100,9 +103,9 @@ function IncomeTab() {
             setIsAddingManually(false);
             setNewItem({ nomId: '', quantity: 1, location: '', batchId: '' });
             loadInventory();
-            alert('Детали успешно размещены на складе');
+            showNotification('Детали успешно размещены на складе', 'success');
         } catch (e: any) {
-            alert(e.response?.data?.error || 'Ошибка при добавлении на склад');
+            showNotification(e.response?.data?.error || 'Ошибка при добавлении на склад', 'error');
         }
     };
 
@@ -267,6 +270,7 @@ function IncomeTab() {
 function PickingTab() {
     const [orders, setOrders] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const { showNotification } = useNotifications();
 
     const loadOrders = async () => {
         setLoading(true);
@@ -290,7 +294,7 @@ function PickingTab() {
         if (!inputQty) return;
         const qty = parseInt(inputQty);
         if (isNaN(qty) || qty <= 0 || qty > maxRequired) {
-            alert('Некорректное количество');
+            showNotification('Некорректное количество', 'warning');
             return;
         }
 
@@ -300,9 +304,10 @@ function PickingTab() {
 
         try {
             await api.pickShippingItem(orderId, { itemId, pickedQty: qty });
+            showNotification('Сборка отмечена', 'success');
             loadOrders(); // reload
         } catch (e: any) {
-            alert(e.response?.data?.error || 'Ошибка сборки');
+            showNotification(e.response?.data?.error || 'Ошибка сборки', 'error');
         }
     };
 

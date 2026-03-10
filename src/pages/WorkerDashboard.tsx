@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { api } from '../api';
 import { useAuth } from '../contexts/AuthContext';
 import { Hammer, CheckCircle, Package, ArrowRight, Play, CheckSquare } from 'lucide-react';
+import { useNotifications } from '../contexts/NotificationContext';
 
 interface Nomenclature { code: string; name: string; }
 interface CastingMethod { name: string; }
@@ -69,6 +70,7 @@ interface Stage {
 
 export default function WorkerDashboard() {
     const { user } = useAuth();
+    const { showNotification } = useNotifications();
     const [tasks, setTasks] = useState<Task[]>([]);
     const [batches, setBatches] = useState<Batch[]>([]);
     const [stages, setStages] = useState<Stage[]>([]);
@@ -108,7 +110,7 @@ export default function WorkerDashboard() {
             await api.updateTask(taskId, { status: newStatus });
             loadData();
         } catch (e) {
-            alert('Ошибка при изменении статуса');
+            showNotification('Ошибка при изменении статуса', 'error');
         }
     };
 
@@ -145,12 +147,12 @@ export default function WorkerDashboard() {
             setPouringTemp('');
             setMoldTemp('');
             loadData();
-            alert('Партия успешно создана и передана на первый этап');
+            showNotification('Партия успешно создана и передана на первый этап', 'success');
         } catch (e: any) {
             if (e.response && e.response.status === 409) {
-                alert(e.response.data.error || 'Партия с таким номером уже существует!');
+                showNotification(e.response.data.error || 'Партия с таким номером уже существует!', 'error');
             } else {
-                alert('Ошибка при сохранении партии');
+                showNotification('Ошибка при сохранении партии', 'error');
             }
         }
     };
@@ -167,7 +169,7 @@ export default function WorkerDashboard() {
             await api.startStage(stageId);
             loadData();
         } catch (e) {
-            alert('Ошибка при начале этапа');
+            showNotification('Ошибка при начале этапа', 'error');
         }
     };
 
@@ -178,7 +180,7 @@ export default function WorkerDashboard() {
         try {
             const isHtsPouring = stageReportModal.stage.stage === 'POURING' && stageReportModal.stage.batch.route === 'HTS';
             if (isHtsPouring && !stageNewBatchNumber) {
-                alert('Укажите номер партии для дальнейшего следования!');
+                showNotification('Укажите номер партии для дальнейшего следования!', 'warning');
                 return;
             }
 
@@ -194,12 +196,12 @@ export default function WorkerDashboard() {
             setStageNote('');
             setStageNewBatchNumber('');
             loadData();
-            alert('Этап успешно завершен');
+            showNotification('Этап успешно завершен', 'success');
         } catch (e: any) {
             if (e.response && e.response.status === 409) {
-                alert(e.response.data.error || 'Партия с таким номером уже существует!');
+                showNotification(e.response.data.error || 'Партия с таким номером уже существует!', 'error');
             } else {
-                alert('Ошибка при завершении этапа');
+                showNotification('Ошибка при завершении этапа', 'error');
             }
         }
     };

@@ -3,6 +3,7 @@ import { api } from '../api';
 import { useAuth } from '../contexts/AuthContext';
 import { Plus, List as ListIcon, FileSpreadsheet, Eye, Trash2, Save as SaveIcon } from 'lucide-react';
 import * as XLSX from 'xlsx';
+import { useNotifications } from '../contexts/NotificationContext';
 
 export default function Ledger() {
     const [subTab, setSubTab] = useState<'new' | 'registry' | 'details'>('registry');
@@ -42,10 +43,18 @@ export default function Ledger() {
 // ============================ REGISTRY VIEW ============================
 function RegistryView({ melts, alloys, nom, onView, onReload }: { melts: any[], alloys: any[], nom: any[], onView: (id: number) => void, onReload: () => void }) {
 
+    const { confirm, showNotification } = useNotifications();
     const handleDelete = async (id: number) => {
-        if (!confirm('Удалить эту плавку?')) return;
-        if (api.deleteMelt) await api.deleteMelt(id);
-        onReload();
+        if (!await confirm({ message: 'Удалить эту плавку?', type: 'danger' })) return;
+        if (api.deleteMelt) {
+            try {
+                await api.deleteMelt(id);
+                showNotification('Плавка удалена', 'success');
+                onReload();
+            } catch {
+                showNotification('Ошибка удаления', 'error');
+            }
+        }
     };
 
     const handleExportExcel = () => {
@@ -191,12 +200,13 @@ function NewMeltView({ nom, alloys, onDone }: { nom: any[], alloys: any[], onDon
         setCastings(c);
     };
 
+    const { showNotification, confirm } = useNotifications();
     const handleSave = async () => {
-        if (!meltNum.trim()) return alert('Укажите номер плавки');
+        if (!meltNum.trim()) return showNotification('Укажите номер плавки', 'warning');
 
         let sumExit = 0;
         castings.forEach(c => sumExit += parseFloat(c.exitMassFact) || 0);
-        if (sumExit > meltMass && !confirm('Внимание! Суммарная масса выхода деталей больше массы завалки. Сохранить все равно?')) return;
+        if (sumExit > meltMass && !await confirm({ message: 'Внимание! Суммарная масса выхода деталей больше массы завалки. Сохранить все равно?', type: 'danger' })) return;
 
         const melt = {
             meltNumber: meltNum.trim(),
@@ -204,9 +214,13 @@ function NewMeltView({ nom, alloys, onDone }: { nom: any[], alloys: any[], onDon
             castings
         };
 
-        if (api.saveMelt) await api.saveMelt(melt);
-        alert('Плавка сохранена!');
-        onDone();
+        try {
+            if (api.saveMelt) await api.saveMelt(melt);
+            showNotification('Плавка сохранена!', 'success');
+            onDone();
+        } catch {
+            showNotification('Ошибка сохранения плавки', 'error');
+        }
     };
 
     let sumExit = 0, sumGood = 0;
@@ -352,6 +366,7 @@ function MeltDetailsView({ melt, alloys, nom, onBack }: { melt: any, alloys: any
 
     if (!melt) return <div />;
 
+    const { showNotification } = useNotifications();
     const handleSaveConclusion = async () => {
         try {
             await api.saveMeltConclusion(melt.id, {
@@ -360,10 +375,10 @@ function MeltDetailsView({ melt, alloys, nom, onBack }: { melt: any, alloys: any
                 finalVerdict,
                 comments
             });
-            alert('Заключение успешно сохранено!');
+            showNotification('Заключение успешно сохранено!', 'success');
             onBack();
         } catch (e) {
-            alert('Ошибка сохранения заключения');
+            showNotification('Ошибка сохранения заключения', 'error');
         }
     };
 

@@ -1,12 +1,16 @@
 import { Router, Request, Response } from 'express';
 import { authenticateToken } from '../middlewares/authMiddleware';
 import prisma from '../db';
+import { DemoService } from '../services/demoService';
 const router = Router();
 router.use(authenticateToken);
 
 // Get QC Reports for a Batch or generally
 router.get('/', async (req: Request, res: Response) => {
     try {
+        if ((req as any).user?.role === 'DEMO') {
+            return res.json(DemoService.getMockInspections());
+        }
         const { batchId } = req.query;
         const where: any = {};
 

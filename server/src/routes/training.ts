@@ -44,14 +44,22 @@ router.post('/', authenticateToken, async (req: any, res) => {
         }
 
         const ROLE_LABELS: Record<string, string> = {
-            'WORKER': 'Рабочий',
-            'MASTER': 'Мастер',
-            'TECHNOLOGIST': 'Технолог',
-            'OTC': 'ОТК',
-            'DIRECTOR': 'Директор',
             'ADMIN': 'Администратор',
-            'SALES': 'Менеджер по продажам',
-            'TRAINER': 'Учебный центр'
+            'DIRECTOR': 'Руководитель',
+            'MASTER': 'Мастер участка',
+            'TECHNOLOGIST': 'Технолог',
+            'OTC': 'Контролёр ОТК',
+            'OTK': 'Контролёр ОТК',
+            'SALES': 'Менеджер продаж',
+            'TRAINER': 'Учебный центр',
+            'WORKER': 'Рабочий (Общий)',
+            'TRIMMER': 'Обрубщик',
+            'MOULDER': 'Формовщик',
+            'KNOCKER': 'Выбивщик',
+            'FINISHER': 'Доработчик',
+            'MELTER': 'Плавильщик',
+            'CASTER': 'Заливщик',
+            'POURER': 'Заливщик'
         };
 
         // Combine labels for display. If I have roles like "MASTER", we can format them?
@@ -163,14 +171,22 @@ router.get('/my', authenticateToken, async (req: any, res) => {
 router.get('/materials/relevant', authenticateToken, async (req: any, res) => {
     try {
         const userRoleLabel = {
-            'WORKER': 'Рабочий',
-            'MASTER': 'Мастер',
-            'TECHNOLOGIST': 'Технолог',
-            'OTC': 'ОТК',
-            'DIRECTOR': 'Директор',
             'ADMIN': 'Администратор',
-            'SALES': 'Менеджер по продажам',
-            'TRAINER': 'Учебный центр'
+            'DIRECTOR': 'Руководитель',
+            'MASTER': 'Мастер участка',
+            'TECHNOLOGIST': 'Технолог',
+            'OTC': 'Контролёр ОТК',
+            'OTK': 'Контролёр ОТК',
+            'SALES': 'Менеджер продаж',
+            'TRAINER': 'Учебный центр',
+            'WORKER': 'Рабочий (Общий)',
+            'TRIMMER': 'Обрубщик',
+            'MOULDER': 'Формовщик',
+            'KNOCKER': 'Выбивщик',
+            'FINISHER': 'Доработчик',
+            'MELTER': 'Плавильщик',
+            'CASTER': 'Заливщик',
+            'POURER': 'Заливщик'
         }[req.user.role as string] || req.user.role;
 
         const userDept = req.user.department;

@@ -1,17 +1,18 @@
-import { Router, Request, Response } from 'express';
-import { authenticateToken } from '../middlewares/authMiddleware';
-import prisma from '../db';
+import { DemoService } from '../services/demoService';
 
 const router = Router();
 router.use(authenticateToken);
 
-const isTMC = (role: string) => ['TMC', 'ADMIN', 'DIRECTOR'].includes(role);
-const isStorekeeper = (role: string) => ['STOREKEEPER', 'ADMIN', 'DIRECTOR'].includes(role);
+const isTMC = (role: string) => ['TMC', 'ADMIN', 'DIRECTOR', 'DEMO'].includes(role);
+const isStorekeeper = (role: string) => ['STOREKEEPER', 'ADMIN', 'DIRECTOR', 'DEMO'].includes(role);
 const isShippingStaff = (role: string) => isTMC(role) || isStorekeeper(role);
 
 // 1. Get shipping orders
 router.get('/', async (req: Request, res: Response) => {
     try {
+        if ((req as any).user?.role === 'DEMO') {
+            return res.json(DemoService.getMockShipping());
+        }
         const userRole = (req as any).user?.role;
         if (!isShippingStaff(userRole)) return res.status(403).json({ error: 'Доступ запрещен' });
 

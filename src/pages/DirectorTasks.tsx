@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { api } from '../api';
 import { useAuth } from '../contexts/AuthContext';
 import { ClipboardCheck, Plus, MessageCircle, Trash2, CheckCircle, Clock, X } from 'lucide-react';
+import { useNotifications } from '../contexts/NotificationContext';
 
 interface Comment { id: number; text: string; createdAt: string; author: { fullName: string; role: string }; }
 interface DTask {
@@ -39,6 +40,7 @@ export default function DirectorTasks() {
     const [form, setForm] = useState({ title: '', description: '', priority: '1', assignedToId: '', deadline: '' });
     const [commentText, setCommentText] = useState('');
     const [loading, setLoading] = useState(true);
+    const { showNotification, confirm } = useNotifications();
 
     const load = async () => {
         setLoading(true);
@@ -64,13 +66,17 @@ export default function DirectorTasks() {
 
     const handleCreate = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!form.title || !form.description || !form.assignedToId) return alert('Заполните все обязательные поля');
+        if (!form.title || !form.description || !form.assignedToId) {
+            showNotification('Заполните все обязательные поля', 'warning');
+            return;
+        }
         try {
             await api.saveDirectorTask({ ...form, priority: Number(form.priority), assignedToId: Number(form.assignedToId) });
             setShowCreate(false);
             setForm({ title: '', description: '', priority: '1', assignedToId: '', deadline: '' });
+            showNotification('Задача создана', 'success');
             load();
-        } catch { alert('Ошибка создания задачи'); }
+        } catch { showNotification('Ошибка создания задачи', 'error'); }
     };
 
     const handleAddComment = async () => {
@@ -79,14 +85,17 @@ export default function DirectorTasks() {
             await api.addDirectorTaskComment(selected.id, commentText);
             setCommentText('');
             load();
-        } catch { alert('Ошибка отправки'); }
+        } catch { showNotification('Ошибка отправки', 'error'); }
     };
 
     const handleDelete = async (id: number) => {
-        if (!confirm('Удалить задачу?')) return;
-        await api.deleteDirectorTask(id);
-        if (selected?.id === id) setSelected(null);
-        load();
+        if (!await confirm({ message: 'Удалить задачу?', type: 'danger' })) return;
+        try {
+            await api.deleteDirectorTask(id);
+            if (selected?.id === id) setSelected(null);
+            showNotification('Задача удалена', 'success');
+            load();
+        } catch { showNotification('Ошибка удаления', 'error'); }
     };
 
     const priColors = ['border-neutral-700', 'border-yellow-700/60', 'border-red-700/60'];

@@ -1,11 +1,23 @@
 import { Router, Request, Response } from 'express';
 import { authenticateToken } from '../middlewares/authMiddleware';
 import prisma from '../db';
+import { DemoService } from '../services/demoService';
 
 const router = Router();
 
 // Protect Data Routes with Auth
 router.use(authenticateToken);
+
+router.use((req, res, next) => {
+    const user = (req as any).user;
+    if (user && user.role === 'DEMO') {
+        if (req.path === '/materials') return res.json(DemoService.getMockMaterials());
+        if (req.path === '/alloys') return res.json(DemoService.getMockAlloys());
+        if (req.path === '/nomenclature') return res.json(DemoService.getMockNomenclature());
+        if (req.path === '/melts') return res.json(DemoService.getMockMelts());
+    }
+    next();
+});
 
 // --- MATERIALS ---
 router.get('/materials', async (req: Request, res: Response) => {

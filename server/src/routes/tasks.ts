@@ -1,14 +1,17 @@
 import { Router, Request, Response } from 'express';
 import { authenticateToken } from '../middlewares/authMiddleware';
 import prisma from '../db';
+import { DemoService } from '../services/demoService';
 
 const router = Router();
-
 router.use(authenticateToken);
 
 // Get Tasks
 router.get('/', async (req: Request, res: Response) => {
     try {
+        if ((req as any).user?.role === 'DEMO') {
+            return res.json(DemoService.getMockTasks());
+        }
         const { assignedToUserId, status } = req.query;
         const where: any = {};
         if (assignedToUserId) where.assignedToUserId = parseInt(assignedToUserId as string);

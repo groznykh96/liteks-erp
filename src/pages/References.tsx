@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { BookOpen, Database, Plus, Save, Trash2, Edit2, X, AlertCircle, Box, RefreshCcw, Building2 } from 'lucide-react';
 import { ELEMENTS } from '../utils/calculator';
 import { DEFAULT_ALLOYS } from '../fallbackData';
-import ConfirmModal from '../components/UI/ConfirmModal';
+import { useNotifications } from '../contexts/NotificationContext';
 
 export default function References() {
     const { user } = useAuth();
@@ -40,14 +40,11 @@ export default function References() {
 
 // ======================= ALLOYS EDITOR =======================
 function AlloysEditor() {
+    const { showNotification, confirm } = useNotifications();
     const [alloys, setAlloys] = useState<any[]>([]);
     const [editingIdx, setEditingIdx] = useState<number | null>(null);
     const [editForm, setEditForm] = useState<any>({});
     const [saving, setSaving] = useState(false);
-
-    const [confirmState, setConfirmState] = useState<{ isOpen: boolean, message: string, onConfirm: () => void, title?: string, confirmText?: string }>({
-        isOpen: false, message: '', onConfirm: () => { }
-    });
 
     const load = async () => {
         try {
@@ -87,8 +84,9 @@ function AlloysEditor() {
             setSaving(true);
             await api.saveAlloy(item);
             await load();
+            showNotification('Марка добавлена', 'success');
         } catch (e: any) {
-            alert('Ошибка при добавлении марки: ' + (e?.response?.data?.error || e?.message || 'Неизвестная ошибка'));
+            showNotification('Ошибка при добавлении марки: ' + (e?.response?.data?.error || e?.message || 'Неизвестная ошибка'), 'error');
         } finally {
             setSaving(false);
         }
@@ -100,38 +98,38 @@ function AlloysEditor() {
     };
 
     const handleSave = async () => {
-        if (!editForm.name?.trim()) return alert('Имя не может быть пустым');
+        if (!editForm.name?.trim()) return showNotification('Имя не может быть пустым', 'warning');
         try {
             setSaving(true);
             await api.saveAlloy(editForm);
             setEditingIdx(null);
             await load();
+            showNotification('Сохранено', 'success');
         } catch (e: any) {
-            alert('Ошибка при сохранении: ' + (e?.response?.data?.error || e?.message || 'Неизвестная ошибка'));
+            showNotification('Ошибка при сохранении: ' + (e?.response?.data?.error || e?.message || 'Неизвестная ошибка'), 'error');
         } finally {
             setSaving(false);
         }
     };
 
     const handleDelete = async (id: number) => {
-        setConfirmState({
-            isOpen: true,
+        if (!await confirm({
             title: 'Удаление сплава',
             message: 'Удалить эту марку сплава? (Внимание: она может использоваться в Журнале плавок!)',
             confirmText: 'Удалить',
-            onConfirm: async () => {
-                setConfirmState(s => ({ ...s, isOpen: false }));
-                try {
-                    setSaving(true);
-                    await api.deleteAlloy(id);
-                    await load();
-                } catch (e: any) {
-                    alert('Ошибка при удалении: ' + (e?.response?.data?.error || e?.message || 'Неизвестная ошибка'));
-                } finally {
-                    setSaving(false);
-                }
-            }
-        });
+            type: 'danger'
+        })) return;
+
+        try {
+            setSaving(true);
+            await api.deleteAlloy(id);
+            await load();
+            showNotification('Марка удалена', 'success');
+        } catch (e: any) {
+            showNotification('Ошибка при удалении: ' + (e?.response?.data?.error || e?.message || 'Неизвестная ошибка'), 'error');
+        } finally {
+            setSaving(false);
+        }
     };
 
     // Accepts current row data directly to avoid stale state issues
@@ -141,17 +139,17 @@ function AlloysEditor() {
             a => a.name.trim().toLowerCase() === name
         );
         if (!gostAlloy) {
-            alert('Для марки "' + currentRow.name + '" нет данных в ГОСТ справочнике.\nСброс недоступен для нестандартных марок.');
+            showNotification('Для марки "' + currentRow.name + '" нет данных в ГОСТ справочнике. Сброс недоступен для нестандартных марок.', 'warning');
             return;
         }
 
-        setConfirmState({
-            isOpen: true,
+        confirm({
             title: 'Сброс значений',
             message: `Сбросить состав "${currentRow.name}" до значений ГОСТ?`,
             confirmText: 'Сбросить',
-            onConfirm: () => {
-                setConfirmState(s => ({ ...s, isOpen: false }));
+            type: 'info'
+        }).then(result => {
+            if (result) {
                 const resetForm = { ...currentRow };
                 ELEMENTS.forEach(el => {
                     const minKey = `${el}_min`;
@@ -172,44 +170,42 @@ function AlloysEditor() {
     };
 
     const resetAllToGost = async () => {
-        setConfirmState({
-            isOpen: true,
+        if (!await confirm({
             title: 'Массовый сброс',
-            message: 'ВНИМАНИЕ! Это действие сбросит химический состав ВСЕХ марок сплавов в этом списке к стандартным значениям ГОСТ.\n\nВы уверены, что хотите продолжить?',
+            message: 'ВНИМАНИЕ! Это действие сбросит химический состав ВСЕХ марок сплавов в этом списке к стандартным значениям ГОСТ. Вы уверены, что хотите продолжить?',
             confirmText: 'Сбросить все',
-            onConfirm: async () => {
-                setConfirmState(s => ({ ...s, isOpen: false }));
-                try {
-                    setSaving(true);
-                    const updates = alloys.map(current => {
-                        const name = (current.name || '').trim().toLowerCase();
-                        const gostAlloy = DEFAULT_ALLOYS.find(a => a.name.trim().toLowerCase() === name);
+            type: 'danger'
+        })) return;
 
-                        if (!gostAlloy) return current;
+        try {
+            setSaving(true);
+            const updates = alloys.map(current => {
+                const name = (current.name || '').trim().toLowerCase();
+                const gostAlloy = DEFAULT_ALLOYS.find(a => a.name.trim().toLowerCase() === name);
 
-                        const updated = { ...current };
-                        ELEMENTS.forEach(el => {
-                            const minKey = `${el}_min`;
-                            const maxKey = `${el}_max`;
-                            if ((gostAlloy as any)[minKey] !== undefined) updated[minKey] = (gostAlloy as any)[minKey];
-                            if ((gostAlloy as any)[maxKey] !== undefined) updated[maxKey] = (gostAlloy as any)[maxKey];
-                        });
-                        return updated;
-                    });
+                if (!gostAlloy) return current;
 
-                    for (const alloy of updates) {
-                        await api.saveAlloy(alloy);
-                    }
+                const updated = { ...current };
+                ELEMENTS.forEach(el => {
+                    const minKey = `${el}_min`;
+                    const maxKey = `${el}_max`;
+                    if ((gostAlloy as any)[minKey] !== undefined) updated[minKey] = (gostAlloy as any)[minKey];
+                    if ((gostAlloy as any)[maxKey] !== undefined) updated[maxKey] = (gostAlloy as any)[maxKey];
+                });
+                return updated;
+            });
 
-                    await load();
-                    alert('Сброс всех известных марок к значениям ГОСТ успешно завершён.');
-                } catch (e: any) {
-                    alert('Ошибка при сбросе: ' + (e?.response?.data?.error || e?.message || 'Неизвестная ошибка'));
-                } finally {
-                    setSaving(false);
-                }
+            for (const alloy of updates) {
+                await api.saveAlloy(alloy);
             }
-        });
+
+            await load();
+            showNotification('Сброс всех известных марок к значениям ГОСТ успешно завершён.', 'success');
+        } catch (e: any) {
+            showNotification('Ошибка при сбросе: ' + (e?.response?.data?.error || e?.message || 'Неизвестная ошибка'), 'error');
+        } finally {
+            setSaving(false);
+        }
     };
 
     return (
@@ -317,27 +313,17 @@ function AlloysEditor() {
                 </table>
             </div>
 
-            <ConfirmModal
-                isOpen={confirmState.isOpen}
-                title={confirmState.title}
-                message={confirmState.message}
-                confirmText={confirmState.confirmText}
-                onConfirm={confirmState.onConfirm}
-                onCancel={() => setConfirmState(s => ({ ...s, isOpen: false }))}
-            />
+            {/* Removed legacy ConfirmModal */}
         </div>
     );
 }
 
 // ======================= MATERIALS EDITOR =======================
 function MaterialsEditor() {
+    const { showNotification, confirm } = useNotifications();
     const [materials, setMaterials] = useState<any[]>([]);
     const [editingIdx, setEditingIdx] = useState<number | null>(null);
     const [editForm, setEditForm] = useState<any>({});
-
-    const [confirmState, setConfirmState] = useState<{ isOpen: boolean, message: string, onConfirm: () => void, title?: string, confirmText?: string }>({
-        isOpen: false, message: '', onConfirm: () => { }
-    });
 
     const load = async () => setMaterials(await api.getMaterials());
     useEffect(() => { load(); }, []);
@@ -354,24 +340,24 @@ function MaterialsEditor() {
     };
 
     const handleSave = async () => {
-        if (!editForm.name.trim()) return alert('Имя не может быть пустым');
+        if (!editForm.name.trim()) return showNotification('Имя не может быть пустым', 'warning');
         if (api.saveMaterial) await api.saveMaterial(editForm);
         setEditingIdx(null);
         load();
+        showNotification('Материал сохранен', 'success');
     };
 
     const handleDelete = async (id: number) => {
-        setConfirmState({
-            isOpen: true,
+        if (!await confirm({
             title: 'Удаление материала',
             message: 'Удалить этот материал?',
             confirmText: 'Удалить',
-            onConfirm: async () => {
-                setConfirmState(s => ({ ...s, isOpen: false }));
-                if (api.deleteMaterial) await api.deleteMaterial(id);
-                load();
-            }
-        });
+            type: 'danger'
+        })) return;
+
+        if (api.deleteMaterial) await api.deleteMaterial(id);
+        load();
+        showNotification('Материал удален', 'success');
     };
 
     return (
@@ -445,14 +431,7 @@ function MaterialsEditor() {
                 </table>
             </div>
 
-            <ConfirmModal
-                isOpen={confirmState.isOpen}
-                title={confirmState.title}
-                message={confirmState.message}
-                confirmText={confirmState.confirmText}
-                onConfirm={confirmState.onConfirm}
-                onCancel={() => setConfirmState(s => ({ ...s, isOpen: false }))}
-            />
+            {/* Removed legacy ConfirmModal */}
         </div>
     );
 }
@@ -460,6 +439,7 @@ function MaterialsEditor() {
 // ======================= NOMENCLATURE EDITOR =======================
 function NomenclatureEditor() {
     const { user } = useAuth();
+    const { showNotification, confirm } = useNotifications();
     const canEdit = user?.role === 'TECHNOLOGIST' || user?.role === 'MASTER' || user?.role === 'DIRECTOR' || user?.role === 'ADMIN';
 
     const [nom, setNom] = useState<any[]>([]);
@@ -467,10 +447,6 @@ function NomenclatureEditor() {
     const [methods, setMethods] = useState<any[]>([]);
     const [editingIdx, setEditingIdx] = useState<number | null>(null);
     const [editForm, setEditForm] = useState<any>({});
-
-    const [confirmState, setConfirmState] = useState<{ isOpen: boolean, message: string, onConfirm: () => void, title?: string, confirmText?: string }>({
-        isOpen: false, message: '', onConfirm: () => { }
-    });
 
     const load = async () => {
         setNom(await api.getNomenclature());
@@ -493,24 +469,24 @@ function NomenclatureEditor() {
         if (api.saveNomenclature) await api.saveNomenclature(editForm);
         setEditingIdx(null);
         load();
+        showNotification('Позиция сохранена', 'success');
     };
 
     const handleDelete = async (id: number) => {
         if (!canEdit) return;
         const isUsed = melts.some(m => (m.castings || []).some((c: any) => c.nomId === id));
-        if (isUsed) return alert('Деталь уже используется в реестре плавок, удаление запрещено!');
+        if (isUsed) return showNotification('Деталь уже используется в реестре плавок, удаление запрещено!', 'error');
 
-        setConfirmState({
-            isOpen: true,
+        if (!await confirm({
             title: 'Удаление детали',
             message: 'Удалить эту позицию справочника?',
             confirmText: 'Удалить',
-            onConfirm: async () => {
-                setConfirmState(s => ({ ...s, isOpen: false }));
-                if (api.deleteNomenclature) await api.deleteNomenclature(id);
-                load();
-            }
-        });
+            type: 'danger'
+        })) return;
+
+        if (api.deleteNomenclature) await api.deleteNomenclature(id);
+        load();
+        showNotification('Позиция удалена', 'success');
     };
 
     const handleAddNew = () => {
@@ -601,14 +577,7 @@ function NomenclatureEditor() {
                 </table>
             </div>
 
-            <ConfirmModal
-                isOpen={confirmState.isOpen}
-                title={confirmState.title}
-                message={confirmState.message}
-                confirmText={confirmState.confirmText}
-                onConfirm={confirmState.onConfirm}
-                onCancel={() => setConfirmState(s => ({ ...s, isOpen: false }))}
-            />
+            {/* Removed legacy ConfirmModal */}
         </div>
     );
 }
@@ -616,15 +585,12 @@ function NomenclatureEditor() {
 // ======================= DEPARTMENTS EDITOR =======================
 function DepartmentsEditor() {
     const { user } = useAuth();
+    const { showNotification, confirm } = useNotifications();
     const canEdit = ['MASTER', 'TECHNOLOGIST', 'TECH', 'ADMIN', 'DIRECTOR'].includes(user?.role || '');
 
     const [deps, setDeps] = useState<any[]>([]);
     const [editingIdx, setEditingIdx] = useState<number | null>(null);
     const [editForm, setEditForm] = useState<any>({});
-
-    const [confirmState, setConfirmState] = useState<{ isOpen: boolean, message: string, onConfirm: () => void, title?: string, confirmText?: string }>({
-        isOpen: false, message: '', onConfirm: () => { }
-    });
 
     const load = async () => setDeps(await api.getDepartments());
     useEffect(() => { load(); }, []);
@@ -637,25 +603,25 @@ function DepartmentsEditor() {
 
     const handleSave = async () => {
         if (!canEdit) return;
-        if (!editForm.name.trim()) return alert('Название не может быть пустым');
+        if (!editForm.name.trim()) return showNotification('Название не может быть пустым', 'warning');
         if (api.saveDepartment) await api.saveDepartment(editForm);
         setEditingIdx(null);
         load();
+        showNotification('Подразделение сохранено', 'success');
     };
 
     const handleDelete = async (id: number) => {
         if (!canEdit) return;
-        setConfirmState({
-            isOpen: true,
+        if (!await confirm({
             title: 'Удаление цеха',
             message: 'Удалить это подразделение?',
             confirmText: 'Удалить',
-            onConfirm: async () => {
-                setConfirmState(s => ({ ...s, isOpen: false }));
-                if (api.deleteDepartment) await api.deleteDepartment(id);
-                load();
-            }
-        });
+            type: 'danger'
+        })) return;
+
+        if (api.deleteDepartment) await api.deleteDepartment(id);
+        load();
+        showNotification('Подразделение удалено', 'success');
     };
 
     const handleAddNew = () => {
@@ -721,14 +687,7 @@ function DepartmentsEditor() {
                 </table>
             </div>
 
-            <ConfirmModal
-                isOpen={confirmState.isOpen}
-                title={confirmState.title}
-                message={confirmState.message}
-                confirmText={confirmState.confirmText}
-                onConfirm={confirmState.onConfirm}
-                onCancel={() => setConfirmState(s => ({ ...s, isOpen: false }))}
-            />
+            {/* Removed legacy ConfirmModal */}
         </div>
     );
 }

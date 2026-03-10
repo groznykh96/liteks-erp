@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { api } from '../api';
 import { useAuth } from '../contexts/AuthContext';
 import { LayoutGrid, ArrowRight, UserPlus } from 'lucide-react';
+import { useNotifications } from '../contexts/NotificationContext';
 
 interface Worker {
     id: number;
@@ -40,6 +41,7 @@ export default function ProductionBoard() {
     const [batches, setBatches] = useState<Batch[]>([]);
     const [users, setUsers] = useState<Worker[]>([]);
     const [loading, setLoading] = useState(true);
+    const { showNotification } = useNotifications();
 
     const [assignModal, setAssignModal] = useState<{ isOpen: boolean; stageId: number | null }>({
         isOpen: false, stageId: null
@@ -75,9 +77,10 @@ export default function ProductionBoard() {
             });
             setAssignModal({ isOpen: false, stageId: null });
             setSelectedWorkerId('');
+            showNotification('Исполнитель назначен', 'success');
             loadData();
         } catch (e) {
-            alert('Ошибка при назначении');
+            showNotification('Ошибка при назначении', 'error');
         }
     };
 

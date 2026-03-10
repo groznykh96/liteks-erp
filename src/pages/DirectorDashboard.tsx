@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { api } from '../api';
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { Briefcase, Activity, AlertTriangle, TrendingUp, Plus } from 'lucide-react';
+import { useNotifications } from '../contexts/NotificationContext';
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
 
@@ -10,6 +11,7 @@ const DirectorDashboard: React.FC = () => {
     const [costsStats, setCostsStats] = useState<any[]>([]);
     const [productivityStats, setProductivityStats] = useState<{ byDepartment: any[] }>({ byDepartment: [] });
     const [workersStats, setWorkersStats] = useState<any[]>([]);
+    const { showNotification } = useNotifications();
 
     // For issuing tasks
     const [isAssignTaskModalOpen, setIsAssignTaskModalOpen] = useState(false);
@@ -65,7 +67,7 @@ const DirectorDashboard: React.FC = () => {
     const handleCreateTask = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!newTask.partCodeId || !newTask.methodId || !newTask.assignedToUserId || !newTask.quantity) {
-            return alert('Пожалуйста, выберите все обязательные параметры (деталь, метод, количество, исполнитель).');
+            return showNotification('Пожалуйста, выберите все обязательные параметры (деталь, метод, количество, исполнитель).', 'warning');
         }
         try {
             await api.saveTask(newTask);
@@ -77,10 +79,10 @@ const DirectorDashboard: React.FC = () => {
                 assignedToUserId: '',
                 priority: '1'
             });
-            alert('Задача успешно назначена');
+            showNotification('Задача успешно назначена', 'success');
         } catch (error: any) {
             console.error(error);
-            alert('Ошибка при создании задачи: ' + (error.response?.data?.error || 'Неизвестная ошибка'));
+            showNotification('Ошибка при создании задачи: ' + (error.response?.data?.error || 'Неизвестная ошибка'), 'error');
         }
     };
 

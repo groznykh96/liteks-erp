@@ -1,8 +1,20 @@
 import { Router, Request, Response } from 'express';
 import { authenticateToken } from '../middlewares/authMiddleware';
 import prisma from '../db';
+import { DemoService } from '../services/demoService';
 const router = Router();
 router.use(authenticateToken);
+
+router.use((req, res, next) => {
+    const user = (req as any).user;
+    if (user && user.role === 'DEMO') {
+        if (req.path === '/defects') return res.json(DemoService.getMockDefects());
+        if (req.path === '/costs') return res.json(DemoService.getMockCosts());
+        if (req.path === '/productivity') return res.json(DemoService.getMockProductivity());
+        if (req.path === '/workers') return res.json(DemoService.getMockWorkers());
+    }
+    next();
+});
 
 // GET /api/statistics/defects — aggregated from QCReport
 router.get('/defects', async (req: Request, res: Response) => {

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { api } from '../../api';
 import { useAuth } from '../../contexts/AuthContext';
 import { Trash2, Plus, Users, BookOpen, AlertTriangle, ChevronDown, ChevronUp, RefreshCw, UserPlus, Link } from 'lucide-react';
+import { useNotifications } from '../../contexts/NotificationContext';
 
 interface Employee {
     id: number;
@@ -48,6 +49,7 @@ const ROLES = [
     { value: 'DIRECTOR', label: 'Директор' },
     { value: 'ADMIN', label: 'Администратор' },
     { value: 'SALES', label: 'Менеджер по продажам' },
+    { value: 'DEMO', label: 'Демо-пользователь' },
     { value: 'TRAINER', label: 'Учебный центр' },
 ];
 
@@ -149,6 +151,7 @@ export default function TrainingAdmin() {
     const [loading, setLoading] = useState(true);
     const [showCreate, setShowCreate] = useState(false);
     const [expandedId, setExpandedId] = useState<number | null>(null);
+    const { showNotification, confirm } = useNotifications();
 
     // Assign-more modal
     const [showAssign, setShowAssign] = useState(false);
@@ -194,7 +197,7 @@ export default function TrainingAdmin() {
     const handleCreate = async (e: React.FormEvent) => {
         e.preventDefault();
         if (selectedRoles.length === 0 && selectedDeps.length === 0 && selectedUsers.length === 0) {
-            alert('Выберите хотя бы одну роль, отдел или конкретного сотрудника.');
+            showNotification('Выберите хотя бы одну роль, отдел или конкретного сотрудника.', 'warning');
             return;
         }
         try {
@@ -207,19 +210,21 @@ export default function TrainingAdmin() {
             });
             setShowCreate(false);
             resetForm();
+            showNotification('Материал создан и назначен', 'success');
             load();
         } catch (e: any) {
-            alert('Ошибка при создании: ' + (e?.response?.data?.detail || e?.message || 'неизвестная ошибка'));
+            showNotification('Ошибка при создании: ' + (e?.response?.data?.detail || e?.message || 'неизвестная ошибка'), 'error');
         }
     };
 
     const handleDelete = async (id: number) => {
-        if (!confirm('Точно удалить этот материал? Все назначения будут потеряны.')) return;
+        if (!await confirm({ message: 'Точно удалить этот материал? Все назначения будут потеряны.', type: 'danger' })) return;
         try {
             await api.deleteTrainingMaterial(id);
+            showNotification('Материал удален', 'success');
             load();
         } catch {
-            alert('Ошибка при удалении');
+            showNotification('Ошибка при удалении', 'error');
         }
     };
 
@@ -243,18 +248,20 @@ export default function TrainingAdmin() {
                 userIds: assignUsers,
             });
             setShowAssign(false);
+            showNotification('Обучение доназначено', 'success');
             load();
         } catch (e: any) {
-            alert('Ошибка при назначении: ' + (e?.response?.data?.error || e?.message));
+            showNotification('Ошибка при назначении: ' + (e?.response?.data?.error || e?.message), 'error');
         }
     };
 
     const handleReset = async (assignmentId: number) => {
         try {
             await api.resetTrainingAssignment(assignmentId);
+            showNotification('Статус сброшен', 'success');
             load();
         } catch {
-            alert('Ошибка при сбросе статуса');
+            showNotification('Ошибка при сбросе статуса', 'error');
         }
     };
 

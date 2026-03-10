@@ -3,6 +3,7 @@ import { api } from '../api';
 import {
     Package, CheckCircle, Clock, AlertTriangle, Send, Play, MinusCircle, RotateCcw
 } from 'lucide-react';
+import { useNotifications } from '../contexts/NotificationContext';
 
 interface OrderItem {
     id: number;
@@ -64,6 +65,7 @@ export default function MasterOrders() {
     const [commentText, setCommentText] = useState('');
     const [loading, setLoading] = useState(true);
     const [stageDates, setStageDates] = useState<Record<number, { plannedDate: string; actualDate: string }>>({});
+    const { showNotification } = useNotifications();
 
     const load = async () => {
         setLoading(true);
@@ -82,8 +84,9 @@ export default function MasterOrders() {
     const handleAccept = async (orderId: number) => {
         try {
             await api.updateOrder(orderId, { status: 'ACCEPTED' });
+            showNotification('Заказ принят в работу', 'success');
             load();
-        } catch { alert('Ошибка принятия заказа'); }
+        } catch { showNotification('Ошибка принятия заказа', 'error'); }
     };
 
     const handleStageUpdate = async (orderId: number, stage: OrderStage) => {
@@ -143,7 +146,7 @@ export default function MasterOrders() {
             await api.addOrderComment(selected.id, commentText);
             setCommentText('');
             load();
-        } catch { alert('Ошибка'); }
+        } catch { showNotification('Ошибка отправки комментария', 'error'); }
     };
 
     const isOverdue = (order: Order) =>
@@ -279,8 +282,8 @@ export default function MasterOrders() {
                                                                 onClick={() => handleStageSkip(selected.id, stage)}
                                                                 title={stage.status === 'SKIPPED' ? 'Вернуть этап в очередь' : 'Пропустить этап'}
                                                                 className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-bold transition-colors ${stage.status === 'SKIPPED'
-                                                                        ? 'bg-neutral-700 hover:bg-neutral-600 text-neutral-300'
-                                                                        : 'bg-neutral-700/50 hover:bg-red-900/40 text-neutral-400 hover:text-red-400'
+                                                                    ? 'bg-neutral-700 hover:bg-neutral-600 text-neutral-300'
+                                                                    : 'bg-neutral-700/50 hover:bg-red-900/40 text-neutral-400 hover:text-red-400'
                                                                     }`}
                                                             >
                                                                 {stage.status === 'SKIPPED'

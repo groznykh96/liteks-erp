@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useAuth, type User } from '../../contexts/AuthContext';
-import { Trash2, UserPlus, Shield, BookOpen, Save, ChevronDown, ChevronUp, Database } from 'lucide-react';
+import { Trash2, UserPlus, Shield, BookOpen, Save, ChevronDown, ChevronUp, Database, MonitorPlay, Plus } from 'lucide-react';
+import { useNotifications } from '../../contexts/NotificationContext';
 
 import API_URL from '../../config';
 
@@ -9,20 +10,20 @@ const ROLE_LABELS: Record<string, { label: string; color: string }> = {
     ADMIN: { label: 'Администратор', color: 'text-red-400' },
     DIRECTOR: { label: 'Руководитель', color: 'text-emerald-400' },
     MASTER: { label: 'Мастер участка', color: 'text-blue-400' },
-    TECH: { label: 'Технолог', color: 'text-teal-400' },
     TECHNOLOGIST: { label: 'Технолог', color: 'text-teal-400' },
-    OTK: { label: 'Контролёр ОТК', color: 'text-purple-400' },
     OTC: { label: 'Контролёр ОТК', color: 'text-purple-400' },
     SALES: { label: 'Менеджер продаж', color: 'text-orange-300' },
     TMC: { label: 'Специалист ТМЦ', color: 'text-indigo-400' },
     STOREKEEPER: { label: 'Кладовщик', color: 'text-yellow-400' },
     TRAINER: { label: 'Учебный центр', color: 'text-pink-400' },
+    DEMO: { label: 'ДЕМО-ДОСТУП', color: 'text-yellow-500' },
     WORKER: { label: 'Рабочий (Общий)', color: 'text-orange-400' },
     TRIMMER: { label: 'Обрубщик', color: 'text-orange-400' },
     MOULDER: { label: 'Формовщик', color: 'text-orange-400' },
-    POURER: { label: 'Заливщик', color: 'text-orange-400' },
     KNOCKER: { label: 'Выбивщик', color: 'text-orange-400' },
     FINISHER: { label: 'Доработчик', color: 'text-orange-400' },
+    MELTER: { label: 'Плавильщик', color: 'text-orange-400' },
+    POURER: { label: 'Заливщик', color: 'text-orange-400' },
 };
 
 // Full default content — always visible in editor even if server unavailable
@@ -57,7 +58,7 @@ const DEFAULT_EDIT_STATE: Record<string, { title: string; content: string }> = {
 ## 3. Заказы в производстве
 В разделе **«Заказы в работе»** принимайте заказы от отдела продаж, отмечайте этапы и ставьте плановые/фактические даты.`
     },
-    OTK: {
+    OTC: {
         title: 'Инструкция: Контролёр ОТК',
         content: `## 1. Очередь на приёмку
 В разделе **«ОТК и Инспекция»** на вкладке **«Ожидают проверки»** — все партии, сданные рабочими.
@@ -85,7 +86,7 @@ const DEFAULT_EDIT_STATE: Record<string, { title: string; content: string }> = {
 ## 3. Заказы от клиентов
 В разделе **«Заказы от клиентов»** контролируйте все производственные заказы.`
     },
-    TECH: {
+    TECHNOLOGIST: {
         title: 'Инструкция: Технолог',
         content: `## 1. Расчёт шихты
 - Выберите марку сплава и вес завалки (кг)
@@ -156,7 +157,8 @@ interface InstructionPage {
 
 const AdminPanel: React.FC = () => {
     const { user } = useAuth();
-    const [activeTab, setActiveTab] = useState<'users' | 'instructions'>('users');
+    const { showNotification, confirm } = useNotifications();
+    const [activeTab, setActiveTab] = useState<'users' | 'instructions' | 'slides'>('users');
 
     // Users state
     const [users, setUsers] = useState<User[]>([]);
@@ -176,6 +178,10 @@ const AdminPanel: React.FC = () => {
 
     // Departments state
     const [deps, setDeps] = useState<{ id: number, name: string }[]>([]);
+
+    // Demo Slides state
+    const [slides, setSlides] = useState<any[]>([]);
+    const [slidesLoading, setSlidesLoading] = useState(false);
 
     const getToken = () => localStorage.getItem('token');
 
@@ -225,10 +231,25 @@ const AdminPanel: React.FC = () => {
         }
     };
 
+    const fetchSlides = async () => {
+        setSlidesLoading(true);
+        try {
+            const res = await axios.get(`${API_URL}/admin/demo-slides`, {
+                headers: { Authorization: `Bearer ${getToken()}` }
+            });
+            setSlides(res.data);
+        } catch (e) {
+            console.error('Failed to fetch slides', e);
+        } finally {
+            setSlidesLoading(false);
+        }
+    };
+
     useEffect(() => {
         fetchUsers();
         fetchInstructions();
         fetchDeps();
+        fetchSlides();
     }, []);
 
     const handleCreateUser = async (e: React.FormEvent) => {
@@ -237,24 +258,30 @@ const AdminPanel: React.FC = () => {
             await axios.post(`${API_URL}/auth/register`, { login, password, fullName, role, department });
             fetchUsers();
             setLogin(''); setPassword(''); setFullName(''); setDepartment('');
+            showNotification('Сотрудник успешно зарегистрирован', 'success');
         } catch (e: any) {
-            alert(e.response?.data?.error || 'Ошибка при создании пользователя');
+            showNotification(e.response?.data?.error || 'Ошибка при создании пользователя', 'error');
         }
     };
 
     const handleDeleteUser = async (id: number) => {
-        if (!window.confirm('Уверены, что хотите удалить сотрудника?')) return;
+        if (!await confirm({
+            message: 'Уверены, что хотите удалить сотрудника?',
+            type: 'danger',
+            confirmText: 'Удалить'
+        })) return;
         try {
             await axios.delete(`${API_URL}/users/${id}`);
             fetchUsers();
+            showNotification('Сотрудник удален', 'success');
         } catch {
-            alert('Ошибка при удалении');
+            showNotification('Ошибка при удалении', 'error');
         }
     };
 
     const handleSaveInstruction = async (roleKey: string) => {
         const data = editState[roleKey];
-        if (!data?.title || !data?.content) return alert('Заполните заголовок и содержание');
+        if (!data?.title || !data?.content) return showNotification('Заполните заголовок и содержание', 'warning');
         setSaving(roleKey);
         try {
             await axios.put(
@@ -263,8 +290,9 @@ const AdminPanel: React.FC = () => {
                 { headers: { Authorization: `Bearer ${getToken()}` } }
             );
             fetchInstructions();
+            showNotification(`Инструкция для ${roleKey} сохранена`, 'success');
         } catch (e: any) {
-            alert(e.response?.data?.error || 'Ошибка сохранения');
+            showNotification(e.response?.data?.error || 'Ошибка сохранения', 'error');
         } finally {
             setSaving(null);
         }
@@ -305,12 +333,12 @@ const AdminPanel: React.FC = () => {
                 const text = await (new Response(e.response.data)).text();
                 try {
                     const json = JSON.parse(text);
-                    alert(json.error || 'Ошибка при скачивании бэкапа.');
+                    showNotification(json.error || 'Ошибка при скачивании бэкапа.', 'error');
                 } catch {
-                    alert('Ошибка при скачивании бэкапа.');
+                    showNotification('Ошибка при скачивании бэкапа.', 'error');
                 }
             } else {
-                alert('Ошибка при скачивании бэкапа. Возможно утилиты БД не доступны на сервере (ожидается при локальном запуске Windows).');
+                showNotification('Ошибка при скачивании бэкапа. Возможно утилиты БД не доступны на сервере (ожидается при локальном запуске Windows).', 'error');
             }
         } finally {
             setDownloadingBackup(false);
@@ -351,6 +379,12 @@ const AdminPanel: React.FC = () => {
                 >
                     <BookOpen size={16} /> Инструкции
                 </button>
+                <button
+                    onClick={() => setActiveTab('slides')}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-semibold transition-colors ${activeTab === 'slides' ? 'bg-blue-600 text-white' : 'text-neutral-400 hover:text-white'}`}
+                >
+                    <MonitorPlay size={16} /> Демо-тур
+                </button>
             </div>
 
             {/* ====== USERS TAB ====== */}
@@ -384,12 +418,13 @@ const AdminPanel: React.FC = () => {
                                     <option value="ADMIN">Администратор</option>
                                     <option value="DIRECTOR">Руководитель</option>
                                     <option value="MASTER">Мастер участка</option>
-                                    <option value="TECH">Технолог</option>
-                                    <option value="OTK">Контролёр ОТК</option>
+                                    <option value="TECHNOLOGIST">Технолог</option>
+                                    <option value="OTC">Контролёр ОТК</option>
                                     <option value="SALES">Менеджер продаж</option>
                                     <option value="TMC">Специалист ТМЦ</option>
                                     <option value="STOREKEEPER">Кладовщик</option>
                                     <option value="TRAINER">Учебный центр</option>
+                                    <option value="DEMO">ДЕМО-ДОСТУП (Просмотр)</option>
                                     <option value="WORKER">Рабочий (Общий)</option>
                                     <option value="TRIMMER">Обрубщик</option>
                                     <option value="MOULDER">Формовщик</option>
@@ -540,6 +575,127 @@ const AdminPanel: React.FC = () => {
                                 </div>
                             );
                         })
+                    )}
+                </div>
+            )}
+
+            {/* ====== DEMO SLIDES TAB ====== */}
+            {activeTab === 'slides' && (
+                <div className="space-y-6">
+                    <div className="flex items-center justify-between">
+                        <p className="text-sm text-neutral-400">
+                            Управление слайдами ознакомительного тура для демо-пользователей.
+                        </p>
+                        <button 
+                            onClick={async () => {
+                                try {
+                                    await axios.post(`${API_URL}/admin/demo-slides`, {
+                                        title: 'Новый слайд',
+                                        content: 'Описание возможностей...',
+                                        order: slides.length
+                                    }, { headers: { Authorization: `Bearer ${getToken()}` } });
+                                    fetchSlides();
+                                } catch (e) {
+                                    showNotification('Ошибка при создании слайда', 'error');
+                                }
+                            }}
+                            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-lg transition-all text-sm"
+                        >
+                            <Plus size={16} /> Добавить слайд
+                        </button>
+                    </div>
+
+                    {slidesLoading ? (
+                        <div className="text-neutral-400 animate-pulse">Загрузка...</div>
+                    ) : (
+                        <div className="grid grid-cols-1 gap-4">
+                            {slides.sort((a,b) => a.order - b.order).map((slide, index) => (
+                                <div key={slide.id} className="bg-neutral-800 border border-neutral-700 rounded-xl p-6 space-y-4">
+                                    <div className="flex items-center justify-between border-b border-neutral-700 pb-4">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-8 h-8 bg-neutral-900 rounded-full flex items-center justify-center text-xs font-bold text-blue-400 border border-neutral-700">
+                                                {index + 1}
+                                            </div>
+                                            <input 
+                                                value={slide.title}
+                                                onChange={(e) => {
+                                                    const updated = [...slides];
+                                                    updated[index].title = e.target.value;
+                                                    setSlides(updated);
+                                                }}
+                                                className="bg-transparent border-none text-white font-bold text-lg focus:outline-none focus:ring-1 focus:ring-blue-500 rounded px-2"
+                                            />
+                                        </div>
+                                        <button 
+                                            onClick={async () => {
+                                                if (!await confirm({ message: 'Удалить этот слайд?', type: 'danger' })) return;
+                                                try {
+                                                    await axios.delete(`${API_URL}/admin/demo-slides/${slide.id}`, {
+                                                        headers: { Authorization: `Bearer ${getToken()}` }
+                                                    });
+                                                    fetchSlides();
+                                                } catch (e) {
+                                                    showNotification('Ошибка при удалении', 'error');
+                                                }
+                                            }}
+                                            className="text-neutral-500 hover:text-red-500 transition-colors"
+                                        >
+                                            <Trash2 size={18} />
+                                        </button>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-[10px] font-black uppercase tracking-widest text-neutral-500 mb-2">Текст слайда</label>
+                                            <textarea 
+                                                value={slide.content}
+                                                onChange={(e) => {
+                                                    const updated = [...slides];
+                                                    updated[index].content = e.target.value;
+                                                    setSlides(updated);
+                                                }}
+                                                rows={4}
+                                                className="w-full bg-neutral-900 border border-neutral-700 rounded-lg p-3 text-sm text-neutral-300 outline-none focus:border-blue-500 transition-all resize-none"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-[10px] font-black uppercase tracking-widest text-neutral-500 mb-2">Ссылка на изображение</label>
+                                            <input 
+                                                value={slide.imageUrl || ''}
+                                                onChange={(e) => {
+                                                    const updated = [...slides];
+                                                    updated[index].imageUrl = e.target.value;
+                                                    setSlides(updated);
+                                                }}
+                                                className="w-full bg-neutral-900 border border-neutral-700 rounded-lg p-3 text-sm text-neutral-300 outline-none focus:border-blue-500 transition-all mb-4"
+                                                placeholder="https://..."
+                                            />
+                                            {slide.imageUrl && (
+                                                <img src={slide.imageUrl} alt="Preview" className="h-20 w-auto rounded border border-neutral-700 object-cover" />
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    <div className="flex justify-end">
+                                        <button 
+                                            onClick={async () => {
+                                                try {
+                                                    await axios.put(`${API_URL}/admin/demo-slides/${slide.id}`, slide, {
+                                                        headers: { Authorization: `Bearer ${getToken()}` }
+                                                    });
+                                                    showNotification('Слайд сохранен', 'success');
+                                                } catch (e) {
+                                                    showNotification('Ошибка при сохранении', 'error');
+                                                }
+                                            }}
+                                            className="flex items-center gap-2 px-6 py-2 bg-blue-600/20 text-blue-400 border border-blue-500/30 hover:bg-blue-600/30 rounded-lg font-bold text-sm transition-all"
+                                        >
+                                            <Save size={16} /> Сохранить слайд
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
                     )}
                 </div>
             )}

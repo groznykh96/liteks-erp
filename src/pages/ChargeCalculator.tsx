@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Settings, Play, RefreshCw, Save, CheckCircle, XCircle, Target } from 'lucide-react';
+import { useNotifications } from '../contexts/NotificationContext';
 import { api } from '../api';
 import type { Alloy, Material, Burnout } from '../utils/calculator';
 import { ELEMENTS, runSolver, calculateChemistry } from '../utils/calculator';
@@ -21,6 +22,7 @@ export default function ChargeCalculator() {
     const [burnout, setBurnout] = useState<Burnout>({ C: 0, Si: 15, Mn: 30, Cr: 5, Ni: 0, S: 0, P: 0, Cu: 0, Ti: 0, Al: 0, Mg: 0, Sr: 0, Fe: 0 });
     const [enabledMaterials, setEnabledMaterials] = useState<Record<number, boolean>>({});
     const [masses, setMasses] = useState<Record<number, number>>({});
+    const { showNotification } = useNotifications();
 
     useEffect(() => {
         async function load() {
@@ -87,7 +89,7 @@ export default function ChargeCalculator() {
         };
 
         await api.saveMelt(calc);
-        alert('Расчет успешно сохранен в Журнал плавок!');
+        showNotification('Расчет успешно сохранен в Журнал плавок!', 'success');
     };
 
     const chemistry = useMemo(() => {

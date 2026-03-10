@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { authenticateToken } from '../middlewares/authMiddleware';
 import prisma from '../db';
+import { DemoService } from '../services/demoService';
 
 const router = Router();
 router.use(authenticateToken);
@@ -14,6 +15,10 @@ const STAGE_ROUTES: Record<string, string[]> = {
 // Get Batches
 router.get('/', async (req: Request, res: Response) => {
     try {
+        if ((req as any).user?.role === 'DEMO') {
+            return res.json(DemoService.getMockBatches());
+        }
+        
         const { taskId, workerId } = req.query;
         const where: any = {};
 

@@ -166,7 +166,6 @@ function MainLayout() {
                         title="Сменить роль для ознакомления"
                       >
                         <option value="DEMO">Режим: Обзор</option>
-                        <option value="ADMIN">Вид: Администратор</option>
                         <option value="DIRECTOR">Вид: Директор</option>
                         <option value="MASTER">Вид: Мастер</option>
                         <option value="TECHNOLOGIST">Вид: Технолог</option>

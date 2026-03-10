@@ -1,6 +1,7 @@
 import express, { Request, Response } from 'express';
 import prisma from '../db';
 import { authenticateToken } from '../middlewares/authMiddleware';
+import { DemoService } from '../services/demoService';
 
 const router = express.Router();
 
@@ -48,6 +49,8 @@ const db = prisma as any;
 // GET /api/stages/my
 router.get('/my', authenticateToken, async (req: Request, res: Response) => {
     const user = (req as any).user;
+    if (user?.role === 'DEMO') return res.json(DemoService.getMockStages());
+    
     try {
         const allowedStages = Object.entries(STAGE_ROLES)
             .filter(([, roles]) => roles.includes(user.role))
@@ -201,6 +204,8 @@ router.post('/:id/complete', authenticateToken, async (req: Request, res: Respon
 // GET /api/stages/board
 router.get('/board', authenticateToken, async (req: Request, res: Response) => {
     const user = (req as any).user;
+    if (user?.role === 'DEMO') return res.json(DemoService.getMockBatches());
+
     const isManagement = ['MASTER', 'DIRECTOR', 'ADMIN'].includes(user.role);
 
     // Determine which stages this user's role can work on
@@ -258,6 +263,8 @@ router.get('/board', authenticateToken, async (req: Request, res: Response) => {
 // GET /api/stages/stats
 router.get('/stats', authenticateToken, async (req: Request, res: Response) => {
     const user = (req as any).user;
+    if (user?.role === 'DEMO') return res.json({ byStage: [], byWorker: [], total: 0 });
+
     if (!['MASTER', 'DIRECTOR', 'ADMIN'].includes(user.role)) {
         return res.status(403).json({ error: 'Нет доступа' });
     }

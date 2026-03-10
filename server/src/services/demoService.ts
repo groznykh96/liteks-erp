@@ -94,8 +94,30 @@ export class DemoService {
 
     static getMockTasks() {
         return [
-            { id: 1, title: 'Заливка партии #778', status: 'IN_PROGRESS', priority: 'HIGH', worker: { fullName: 'Иванов И.' }, department: 'Литейный цех' },
-            { id: 2, title: 'Обрубка отливок ЗАК-102', status: 'NEW', priority: 'NORMAL', worker: { fullName: 'Петров П.' }, department: 'Обрубной участок' }
+            { 
+                id: 1, 
+                taskNumber: 'T-2026-001',
+                nomenclature: { code: 'АЛ-001', name: 'Корпус насоса' },
+                method: { name: 'ХТС' },
+                quantity: 150,
+                status: 'IN_PROGRESS', 
+                priority: 'HIGH', 
+                worker: { fullName: 'Иванов И.' }, 
+                department: 'Литейный цех',
+                createdAt: new Date().toISOString()
+            },
+            { 
+                id: 2, 
+                taskNumber: 'T-2026-002',
+                nomenclature: { code: 'АЛ-002', name: 'Втулка' },
+                method: { name: 'Кокиль' },
+                quantity: 45,
+                status: 'NEW', 
+                priority: 'NORMAL', 
+                worker: { fullName: 'Петров П.' }, 
+                department: 'Обрубной участок',
+                createdAt: new Date().toISOString()
+            }
         ];
     }
 
@@ -121,6 +143,45 @@ export class DemoService {
     static getMockSalary() {
         return [
             { id: 1, workerName: 'Иванов Иван', period: 'Март 2026', baseSalary: 45000, bonus: 12500, total: 57500 }
+        ];
+    }
+
+    static getMockBatches() {
+        return [
+            {
+                id: 1,
+                batchNumber: 'DEMO-100',
+                completedQuantity: 50,
+                meltsCount: 2,
+                pouringTemp: 710,
+                moldTemp: 220,
+                createdAt: new Date().toISOString(),
+                task: { nomenclature: { code: 'АЛ-001', name: 'Корпус насоса' }, method: { name: 'ХТС' } },
+                qcReports: []
+            }
+        ];
+    }
+
+    static getMockStages() {
+        return [
+            {
+                id: 1,
+                stage: 'POURING',
+                stageLabel: 'Заливка',
+                status: 'PENDING',
+                qtyIn: 50,
+                batch: {
+                    id: 1,
+                    batchNumber: 'DEMO-100',
+                    route: 'HTS',
+                    task: { nomenclature: { code: 'АЛ-001', name: 'Корпус насоса' }, method: { name: 'ХТС' } },
+                    stages: [
+                        { id: 101, stage: 'FORMING', stageLabel: 'Формовка', status: 'DONE', qtyIn: 50, qtyOut: 50, qtyRejected: 0, worker: { fullName: 'Иванов И.' } },
+                        { id: 102, stage: 'POURING', stageLabel: 'Заливка', status: 'PENDING', qtyIn: 50, qtyOut: null, qtyRejected: null }
+                    ]
+                },
+                nextStageLabel: 'Выбивка'
+            }
         ];
     }
 }

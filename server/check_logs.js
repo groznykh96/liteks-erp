@@ -4,19 +4,18 @@ const conn = new Client();
 
 const script = `
 cd /var/www/liteks
-echo "=== Backend Logs ==="
+echo "=== Fetching backend logs ==="
 docker-compose logs --tail=50 backend
-echo "=== Frontend Logs ==="
-docker-compose logs --tail=50 frontend
-echo "=== DB Logs ==="
-docker-compose logs --tail=50 db
+echo "=== Checking database container status ==="
+docker-compose ps db
 `;
 
 conn.on('ready', () => {
-    conn.exec(script, { timeout: 120000 }, (err, stream) => {
+    conn.exec(script, (err, stream) => {
         if (err) throw err;
         stream.on('close', (code) => {
             conn.end();
+            process.exit(code);
         }).on('data', d => process.stdout.write(d.toString()))
             .stderr.on('data', d => process.stderr.write(d.toString()));
     });

@@ -1,9 +1,8 @@
 import express, { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
+import prisma from '../db';
 import { authenticateToken } from '../middlewares/authMiddleware';
 
 const router = express.Router();
-const prisma = new PrismaClient();
 
 // Only certain roles can edit departments (Master, Tech, Director, Admin)
 function checkDepartmentAdmin(req: Request, res: Response, next: any) {

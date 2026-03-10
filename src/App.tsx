@@ -131,7 +131,25 @@ function MainLayout() {
                     <div className="hidden sm:block text-right">
                       <div className="font-semibold text-sm leading-tight text-white">{user.fullName || user.login}</div>
                       <div className="text-xs text-neutral-400">
-                        {user.role} {user.department ? `· ${user.department}` : ''}
+                        {({
+                          ADMIN: 'Администратор',
+                          DIRECTOR: 'Руководитель',
+                          MASTER: 'Мастер участка',
+                          TECH: 'Технолог',
+                          TECHNOLOGIST: 'Технолог',
+                          OTK: 'Контролёр ОТК',
+                          OTC: 'Контролёр ОТК',
+                          SALES: 'Менеджер продаж',
+                          TMC: 'Специалист ТМЦ',
+                          STOREKEEPER: 'Кладовщик',
+                          TRAINER: 'Учебный центр',
+                          WORKER: 'Рабочий',
+                          TRIMMER: 'Обрубщик',
+                          MOULDER: 'Формовщик',
+                          POURER: 'Заливщик',
+                          KNOCKER: 'Выбивщик',
+                          FINISHER: 'Доработчик',
+                        } as any)[user.role] || user.role} {user.department ? `· ${user.department}` : ''}
                       </div>
                     </div>
                     <div className="h-9 w-9 rounded-full bg-neutral-700 flex items-center justify-center text-neutral-400 shrink-0 border border-neutral-600">

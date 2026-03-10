@@ -6,22 +6,29 @@ import { Trash2, UserPlus, Shield, BookOpen, Save, ChevronDown, ChevronUp, Datab
 import API_URL from '../../config';
 
 const ROLE_LABELS: Record<string, { label: string; color: string }> = {
-    WORKER: { label: 'Литейщик / Рабочий', color: 'text-orange-400' },
-    MASTER: { label: 'Мастер', color: 'text-blue-400' },
-    OTK: { label: 'Контролёр ОТК', color: 'text-purple-400' },
-    DIRECTOR: { label: 'Руководитель', color: 'text-emerald-400' },
-    TECH: { label: 'Технолог', color: 'text-teal-400' },
-    SALES: { label: 'Менеджер продаж', color: 'text-orange-300' },
     ADMIN: { label: 'Администратор', color: 'text-red-400' },
+    DIRECTOR: { label: 'Руководитель', color: 'text-emerald-400' },
+    MASTER: { label: 'Мастер участка', color: 'text-blue-400' },
+    TECH: { label: 'Технолог', color: 'text-teal-400' },
+    TECHNOLOGIST: { label: 'Технолог', color: 'text-teal-400' },
+    OTK: { label: 'Контролёр ОТК', color: 'text-purple-400' },
+    OTC: { label: 'Контролёр ОТК', color: 'text-purple-400' },
+    SALES: { label: 'Менеджер продаж', color: 'text-orange-300' },
     TMC: { label: 'Специалист ТМЦ', color: 'text-indigo-400' },
     STOREKEEPER: { label: 'Кладовщик', color: 'text-yellow-400' },
     TRAINER: { label: 'Учебный центр', color: 'text-pink-400' },
+    WORKER: { label: 'Рабочий (Общий)', color: 'text-orange-400' },
+    TRIMMER: { label: 'Обрубщик', color: 'text-orange-400' },
+    MOULDER: { label: 'Формовщик', color: 'text-orange-400' },
+    POURER: { label: 'Заливщик', color: 'text-orange-400' },
+    KNOCKER: { label: 'Выбивщик', color: 'text-orange-400' },
+    FINISHER: { label: 'Доработчик', color: 'text-orange-400' },
 };
 
 // Full default content — always visible in editor even if server unavailable
 const DEFAULT_EDIT_STATE: Record<string, { title: string; content: string }> = {
     WORKER: {
-        title: 'Инструкция Литейщика / Рабочего',
+        title: 'Инструкция: Рабочий (Общий)',
         content: `## 1. Просмотр сменного задания
 Перейдите в раздел **«Мои Задачи»**. Там отображаются выделенные вам задачи мастером. Обращайте внимание на приоритет (Срочно / Высокий / Обычный).
 
@@ -37,7 +44,7 @@ const DEFAULT_EDIT_STATE: Record<string, { title: string; content: string }> = {
 В нижней части страницы в таблице **«Статистика и приёмка ОТК»** отслеживайте статус приёмки.`
     },
     MASTER: {
-        title: 'Инструкция Мастера производственного участка',
+        title: 'Инструкция: Мастер участка',
         content: `## 1. Создание плана и выдача задач
 Перейдите в раздел **«Сменное задание»**:
 - Выберите номенклатуру и метод литья
@@ -51,7 +58,7 @@ const DEFAULT_EDIT_STATE: Record<string, { title: string; content: string }> = {
 В разделе **«Заказы в работе»** принимайте заказы от отдела продаж, отмечайте этапы и ставьте плановые/фактические даты.`
     },
     OTK: {
-        title: 'Инструкция Контролёра ОТК',
+        title: 'Инструкция: Контролёр ОТК',
         content: `## 1. Очередь на приёмку
 В разделе **«ОТК и Инспекция»** на вкладке **«Ожидают проверки»** — все партии, сданные рабочими.
 
@@ -65,7 +72,7 @@ const DEFAULT_EDIT_STATE: Record<string, { title: string; content: string }> = {
 На вкладке **«История проверок»** хранятся все проверенные партии.`
     },
     DIRECTOR: {
-        title: 'Инструкция Руководителя',
+        title: 'Инструкция: Руководитель',
         content: `## 1. Аналитика и показатели
 В разделе **«Воронка (Аналитика)»** отображаются графики:
 - Брак по участкам
@@ -79,7 +86,7 @@ const DEFAULT_EDIT_STATE: Record<string, { title: string; content: string }> = {
 В разделе **«Заказы от клиентов»** контролируйте все производственные заказы.`
     },
     TECH: {
-        title: 'Инструкция Технолога',
+        title: 'Инструкция: Технолог',
         content: `## 1. Расчёт шихты
 - Выберите марку сплава и вес завалки (кг)
 - Отметьте материалы в наличии
@@ -93,7 +100,7 @@ const DEFAULT_EDIT_STATE: Record<string, { title: string; content: string }> = {
 В разделе **«Журнал плавок»** просматривайте историю расчётов.`
     },
     SALES: {
-        title: 'Инструкция Менеджера по продажам',
+        title: 'Инструкция: Менеджер продаж',
         content: `## 1. Создание заказа
 Нажмите **«+ Новый заказ»** и заполните:
 - Клиент / Организация, контакты, срок поставки
@@ -111,7 +118,7 @@ const DEFAULT_EDIT_STATE: Record<string, { title: string; content: string }> = {
 В панели заказа (справа) доступен чат с мастером.`
     },
     ADMIN: {
-        title: 'Инструкция Администратора системы',
+        title: 'Инструкция: Администратор',
         content: `## Управление персоналом
 Вкладка **«Сотрудники»** — создавайте аккаунты:
 - При создании Рабочего / Мастера **обязательно** указывайте цех
@@ -126,15 +133,15 @@ const DEFAULT_EDIT_STATE: Record<string, { title: string; content: string }> = {
 - **- пункт** — элемент списка`
     },
     TMC: {
-        title: 'Инструкция Специалиста ТМЦ',
+        title: 'Инструкция: Специалист ТМЦ',
         content: `## 1. Складской учет\nВ разделе **«ТМЦ и Склад»** отслеживайте остатки готовой продукции по партиям и ячейкам.\n\n## 2. Отгрузки\nСоздавайте задания на отгрузку для кладовщика, указывая заказ и нужные партии деталей.\n\n## 3. Отчет по ЗП\nФормируйте выгрузку для расчета сдельной зарплаты литейщиков на основе выпущенных и принятых ОТК партий.`
     },
     STOREKEEPER: {
-        title: 'Инструкция Кладовщика',
+        title: 'Инструкция: Кладовщик',
         content: `## 1. Приемка из ОТК\nВ разделе **«Складская Логистика»** принимайте проверенные детали из буфера ОТК и размещайте их по ячейкам адресного хранения (сканируйте/вводите адрес).\n\n## 2. Сборка отгрузок\nПолучайте задания на отгрузку от ТМЦ. Находите нужные детали в указанных ячейках и подтверждайте сборку нужного количества.`
     },
     TRAINER: {
-        title: 'Инструкция Учебного центра',
+        title: 'Инструкция: Учебный центр',
         content: `## 1. Обучение\nВ разделе **«Администрирование обучения»** добавляйте новые инструкции и материалы для сотрудников.\n\n## 2. Матрица компетенций\nОтслеживайте, кто из сотрудников ознакомился с материалами.`
     },
 };
@@ -374,21 +381,21 @@ const AdminPanel: React.FC = () => {
                                 <label className="block text-neutral-400 mb-1">Роль</label>
                                 <select value={role} onChange={e => setRole(e.target.value)}
                                     className="w-full bg-neutral-900 border border-neutral-700 rounded p-2 focus:border-blue-500 outline-none">
+                                    <option value="ADMIN">Администратор</option>
+                                    <option value="DIRECTOR">Руководитель</option>
+                                    <option value="MASTER">Мастер участка</option>
+                                    <option value="TECH">Технолог</option>
+                                    <option value="OTK">Контролёр ОТК</option>
+                                    <option value="SALES">Менеджер продаж</option>
+                                    <option value="TMC">Специалист ТМЦ</option>
+                                    <option value="STOREKEEPER">Кладовщик</option>
+                                    <option value="TRAINER">Учебный центр</option>
                                     <option value="WORKER">Рабочий (Общий)</option>
                                     <option value="TRIMMER">Обрубщик</option>
                                     <option value="MOULDER">Формовщик</option>
                                     <option value="POURER">Заливщик</option>
                                     <option value="KNOCKER">Выбивщик</option>
                                     <option value="FINISHER">Доработчик</option>
-                                    <option value="OTK">Сотрудник ОТК</option>
-                                    <option value="TECH">Технолог</option>
-                                    <option value="MASTER">Мастер</option>
-                                    <option value="SALES">Менеджер продаж</option>
-                                    <option value="DIRECTOR">Директор</option>
-                                    <option value="TMC">Специалист ТМЦ</option>
-                                    <option value="STOREKEEPER">Кладовщик</option>
-                                    <option value="TRAINER">Учебный центр</option>
-                                    <option value="ADMIN">Админ</option>
                                 </select>
                             </div>
                             <div>
@@ -433,8 +440,17 @@ const AdminPanel: React.FC = () => {
                                                 <td className="p-3 font-medium">{u.fullName}</td>
                                                 <td className="p-3 text-neutral-400">{u.login}</td>
                                                 <td className="p-3">
-                                                    <span className={`px-2 py-1 rounded text-xs font-bold leading-none ${u.role === 'ADMIN' ? 'bg-red-900 text-red-100' : u.role === 'MASTER' ? 'bg-orange-900 text-orange-100' : u.role === 'OTK' ? 'bg-purple-900 text-purple-100' : u.role === 'SALES' ? 'bg-orange-800 text-orange-200' : 'bg-blue-900 text-blue-100'}`}>
-                                                        {u.role}
+                                                    <span className={`px-2 py-1 rounded text-[10px] font-bold tracking-tight uppercase leading-none shadow-sm border ${u.role === 'ADMIN' ? 'bg-red-900/40 text-red-100 border-red-800' :
+                                                        u.role === 'DIRECTOR' ? 'bg-emerald-900/40 text-emerald-100 border-emerald-800' :
+                                                            u.role === 'MASTER' ? 'bg-blue-900/40 text-blue-100 border-blue-800' :
+                                                                u.role === 'TECH' || u.role === 'TECHNOLOGIST' ? 'bg-teal-900/40 text-teal-100 border-teal-800' :
+                                                                    u.role === 'OTK' || u.role === 'OTC' ? 'bg-purple-900/40 text-purple-100 border-purple-800' :
+                                                                        u.role === 'SALES' ? 'bg-orange-950/40 text-orange-200 border-orange-900' :
+                                                                            u.role === 'TRAINER' ? 'bg-pink-900/40 text-pink-100 border-pink-800' :
+                                                                                u.role === 'TMC' || u.role === 'STOREKEEPER' ? 'bg-indigo-900/40 text-indigo-100 border-indigo-800' :
+                                                                                    'bg-neutral-900/40 text-neutral-100 border-neutral-800'
+                                                        }`}>
+                                                        {ROLE_LABELS[u.role]?.label || u.role}
                                                     </span>
                                                 </td>
                                                 <td className="p-3 text-neutral-400">{(u as any).department || '-'}</td>

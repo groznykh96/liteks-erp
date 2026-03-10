@@ -6,20 +6,24 @@ export class DemoService {
                 orderNumber: 'ЗАК-2026-DEMO1',
                 clientName: 'ООО "Альфа-Пром"',
                 status: 'IN_PRODUCTION',
-                deadline: new Date(Date.now() + 86400000 * 5),
+                deadline: new Date(Date.now() + 86400000 * 5).toISOString(),
                 totalAmount: 150000,
+                createdBy: { fullName: 'Менеджер Демо' },
                 items: [{ id: 1, itemName: 'Деталь Корпуса А1', quantity: 50, alloyName: 'АК7ч' }],
-                stages: [{ id: 1, label: 'Плавка', status: 'COMPLETED' }, { id: 2, label: 'Литье', status: 'IN_PROGRESS' }]
+                stages: [{ id: 1, label: 'Плавка', status: 'COMPLETED' }, { id: 2, label: 'Литье', status: 'IN_PROGRESS' }],
+                comments: []
             },
             {
                 id: 1002,
                 orderNumber: 'ЗАК-2026-DEMO2',
                 clientName: 'ИП Петров В.В.',
                 status: 'NEW',
-                deadline: new Date(Date.now() + 86400000 * 10),
+                deadline: new Date(Date.now() + 86400000 * 10).toISOString(),
                 totalAmount: 45000,
+                createdBy: { fullName: 'Менеджер Демо' },
                 items: [{ id: 2, itemName: 'Втулка Б2', quantity: 100, alloyName: 'БрАЖ9-4' }],
-                stages: [{ id: 3, label: 'Плавка', status: 'PENDING' }]
+                stages: [{ id: 3, label: 'Плавка', status: 'PENDING' }],
+                comments: []
             }
         ];
     }
@@ -28,11 +32,25 @@ export class DemoService {
         return [
             {
                 id: 1,
+                meltNumber: 'ПЛ-26-001',
+                alloyId: 1,
+                meltMass: 1000,
+                totalCost: 50000,
                 alloy: { name: 'АК7ч' },
                 weight: 500,
-                calculateDate: new Date(),
+                date: new Date().toISOString(),
+                calculateDate: new Date().toISOString(),
                 status: 'COMPLETED',
-                composition: { Si: 7.2, Mg: 0.35, Fe: 0.15 }
+                composition: { Si: 7.2, Mg: 0.35, Fe: 0.15 },
+                castings: [
+                    { nomId: 1, qty: 50, exitMassFact: 12.5, goodMassFact: 10, tvgFact: 80, note: '' }
+                ],
+                conclusion: {
+                    chemistryStatus: 'В норме',
+                    mechanicalStatus: 'В норме',
+                    finalVerdict: 'Годна',
+                    employee: { fullName: 'ОТК Демо' }
+                }
             }
         ];
     }
@@ -47,8 +65,8 @@ export class DemoService {
 
     static getMockInventory() {
         return [
-            { id: 1, nomenclature: { name: 'Алюминиевый лом' }, quantity: 1200, location: 'Склад А' },
-            { id: 2, nomenclature: { name: 'Сплав АК7ч в чушках' }, quantity: 850, location: 'Склад Б' }
+            { id: 1, nomenclature: { name: 'Алюминиевый лом', code: 'СЫР-001' }, quantity: 1200, location: 'Склад А' },
+            { id: 2, nomenclature: { name: 'Сплав АК7ч в чушках', code: 'СПЛ-002' }, quantity: 850, location: 'Склад Б' }
         ];
     }
 
@@ -189,13 +207,22 @@ export class DemoService {
             {
                 id: 1,
                 batchNumber: 'DEMO-100',
+                currentStageLabel: 'Заливка',
                 completedQuantity: 50,
                 meltsCount: 2,
                 pouringTemp: 710,
                 moldTemp: 220,
                 createdAt: new Date().toISOString(),
-                task: { nomenclature: { code: 'АЛ-001', name: 'Корпус насоса' }, method: { name: 'ХТС' } },
-                qcReports: []
+                task: { 
+                    taskNumber: 'T-2026-001',
+                    nomenclature: { code: 'АЛ-001', name: 'Корпус насоса' }, 
+                    method: { name: 'ХТС' } 
+                },
+                qcReports: [],
+                stages: [
+                    { id: 101, stageLabel: 'Формовка', status: 'DONE', qtyIn: 50, qtyOut: 50, worker: { fullName: 'Иванов И.' } },
+                    { id: 102, stageLabel: 'Заливка', status: 'IN_PROGRESS', worker: null }
+                ]
             }
         ];
     }

@@ -8,7 +8,32 @@ const SECRET = process.env.JWT_SECRET || 'fallback_secret';
 export const login = async (req: Request, res: Response) => {
     try {
         const { login, password } = req.body;
-        if (!login || !password) return res.status(400).json({ error: 'Требуется логин и пароль' });
+        if (!login || (!password && login !== 'demo')) return res.status(400).json({ error: 'Требуется логин и пароль' });
+
+        if (login === 'demo') {
+            let demoUser = await prisma.user.findUnique({ where: { login: 'demo' } });
+            if (!demoUser) {
+                const salt = await bcrypt.genSalt(10);
+                const passwordHash = await bcrypt.hash('demo', salt);
+                demoUser = await prisma.user.create({
+                    data: {
+                        login: 'demo',
+                        passwordHash,
+                        fullName: 'Демо Пользователь',
+                        role: 'DEMO',
+                        department: 'Демонстрация'
+                    }
+                });
+            }
+            const payload = {
+                id: demoUser.id,
+                login: demoUser.login,
+                role: demoUser.role,
+                fullName: demoUser.fullName
+            };
+            const token = jwt.sign(payload, SECRET);
+            return res.json({ token, user: payload });
+        }
 
         const user = await prisma.user.findUnique({ where: { login } });
         if (!user || !user.isActive) return res.status(401).json({ error: 'Неверный логин или аккаунт отключен' });

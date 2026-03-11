@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { LogOut, User as UserIcon, Bell, Menu, Play } from 'lucide-react';
 
@@ -64,6 +64,15 @@ function MainLayout() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [showDemoTour, setShowDemoTour] = useState(false);
   const { unreadCounts } = useNotifications();
+
+  // Automatically show demo tour for demo users once per session
+  useEffect(() => {
+    const isDemo = originalRole === 'DEMO' || user?.role === 'DEMO' || user?.login === 'demo' || user?.id === -1;
+    if (isDemo && !sessionStorage.getItem('demoPresentationShown')) {
+      setShowDemoTour(true);
+      sessionStorage.setItem('demoPresentationShown', 'true');
+    }
+  }, [user, originalRole]);
 
   // IMPORTANT: Show loading screen until auth is initialized
   if (isLoading) {
